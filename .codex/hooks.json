@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .genesis/guard/check.js",
+            "statusMessage": "Checking production safety",
+            "timeout": 30
+          }
+        ]
+      },
+      {
+        "matcher": "apply_patch|Edit|Write|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .genesis/hooks/check-loop-contract.js",
+            "statusMessage": "Checking the initiative gate",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

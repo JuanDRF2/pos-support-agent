@@ -1,0 +1,30 @@
+# Initiative ledger for pos-support-agent.
+# Each initiative is one folder under changes/; when done it moves to
+# changes/archive/YYYY-MM-DD-<id>/ and its spec deltas fold into specs/.
+# Project identity, stack, and guardrails live in AGENTS.md.
+schema: spec-driven
+
+context: |
+  See AGENTS.md for this project's identity, stack, and guardrails.
+
+# Genesis right-sizes rigor: a small prototype fills a light spine
+# (loop-contract + proposal + tasks); bigger or riskier work adds design,
+# spec deltas, and a verify-report.
+rules:
+  gates:
+    - Two human approvals are required before any code — (1) the proposal, and
+      (2) design + spec + tasks. No code is written until both are approved.
+    - An initiative with UI needs a THIRD human approval: the `design` gate. The
+      screens are produced against the configured design system (always its latest
+      branch) and mirrored into changes/<id>/design/; nobody approves an
+      implementation whose UI they never saw.
+  safety:
+    - A new database, new auth, new cloud infra, or two systems talking for the
+      first time is a hard breakpoint — stop and get a human decision.
+    - No hardcoded secrets; validate external input; HTTPS only; never log secrets.
+  proposal:
+    - Enumerate any root-config change file-by-file; never fold it in silently.
+  tasks:
+    - Group by phase, hierarchical numbering, one session each, with a validation command.
+  archive:
+    - The archive is an audit trail — never delete or modify an archived initiative.
