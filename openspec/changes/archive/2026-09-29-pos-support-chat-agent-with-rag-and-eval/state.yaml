@@ -1,0 +1,32 @@
+# pos-support-chat-agent-with-rag-and-eval — Genesis initiative state (managed by the genesis helper).
+# Gates + infra are human-signed via `genesis gate approve` / `genesis infra accept`
+# and must NOT be hand-edited — a hook blocks the agent from touching this file.
+change: pos-support-chat-agent-with-rag-and-eval
+title: POS support chat agent with RAG and evals
+phase: archived            # draft | proposed | designed | specced | tasked | applying | verifying | archived
+gates:
+  proposal: approved       # pending | approved | changes-requested
+  implementation: approved  # pending | approved | changes-requested
+  design: n/a             # n/a (no UI) | off (design switched off) | pending | approved | changes-requested | waived (see `genesis gate waive`)
+# Where this initiative's design came from. Written by `genesis design set|record`;
+# the block is named designSource (not design) because the parsers match keys
+# flat and `gates.design` already owns the key `design`.
+designSource:
+  need: none       # undecided | none | ui   (set by `genesis design set <id> <none|ui>`)
+  system: ""            # Claude Design design-system project id
+  commit: ""            # design-system repo commit the sync used
+  project: ""           # Claude Design project id holding this initiative's screens
+  url: ""               # durable claude.ai/design link
+  synced: ""            # date of the last design sync
+  waived: ""            # why this design carries no file of the design system
+infra:
+  scope: none           # none | project | shared   (set by `genesis infra set`)
+  gate: n/a             # n/a | pending | accepted   (shared is human-only — proceed by hand)
+autonomy: supervised    # supervised | autonomous
+appetite: ""
+breakpoints: []         # append-only log of fired breakpoints
+stale:                  # artifacts a decision marked stale until `genesis reconcile`d (written by `genesis decide`)
+approvals:              # append-only trail — who signed what, when
+  - implementation approved by jdrf on 2026-09-29
+  - proposal approved by jdrf on 2026-09-29
+updated: 2026-09-29
