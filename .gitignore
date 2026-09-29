@@ -1,0 +1,14 @@
+node_modules/
+dist/
+coverage/
+.env
+*.log
+.DS_Store
+.genesis/worktrees/
+# Disposable staging copy of the design system (re-created by `genesis design update`).
+.genesis/design/
+
+data/
+.cache/
+.env.*
+!.env.example
