@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>POS Support</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --bg: #f6f7f9;
+  --panel: #ffffff;
+  --text: #1c1f24;
+  --muted: #5d6673;
+  --border: #d9dee4;
+  --accent: #1f5fbf;
+  --on-accent: #ffffff;
+  --agent: #eceff3;
+  --refusal: #f6efe0;
+  --error-bg: #fdecec;
+  --error-text: #8a1c1c;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14171b;
+    --panel: #1c2026;
+    --text: #e8ebef;
+    --muted: #9aa3ae;
+    --border: #2f3640;
+    --accent: #5b9bff;
+    --on-accent: #0d1420;
+    --agent: #272d35;
+    --refusal: #3a3324;
+    --error-bg: #3b1f1f;
+    --error-text: #ffb4b4;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+main {
+  display: flex;
+  flex-direction: column;
+  max-width: 720px;
+  height: 100vh;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+h1 { margin: 0; padding: 16px 0 12px; font-size: 1.25rem; border-bottom: 1px solid var(--border); }
+#messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 16px 0; }
+.bubble { max-width: 85%; padding: 10px 14px; border-radius: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.user { align-self: flex-end; background: var(--accent); color: var(--on-accent); border-bottom-right-radius: 4px; }
+.agent { align-self: flex-start; background: var(--agent); border-bottom-left-radius: 4px; }
+.refusal { align-self: flex-start; background: var(--refusal); border-bottom-left-radius: 4px; }
+.thinking { align-self: flex-start; color: var(--muted); font-style: italic; }
+.error { align-self: flex-start; background: var(--error-bg); color: var(--error-text); }
+.source { margin-top: 8px; font-size: 0.85rem; color: var(--muted); }
+form { display: flex; gap: 8px; padding: 12px 0 16px; border-top: 1px solid var(--border); }
+input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+}
+button {
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+button:disabled { opacity: 0.5; cursor: default; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+</style>
+</head>
+<body>
+<main>
+  <h1>POS Support</h1>
+  <div id="messages" role="log" aria-live="polite"></div>
+  <form id="form" autocomplete="off">
+    <label class="sr-only" for="question">Your question</label>
+    <input id="question" type="text" maxlength="500" placeholder="Ask about checkout, renewals or gift renewals" required>
+    <button id="send" type="submit">Send</button>
+  </form>
+</main>
+<script>
+'use strict';
+var messages = document.getElementById('messages');
+var form = document.getElementById('form');
+var input = document.getElementById('question');
+var send = document.getElementById('send');
+var TIMEOUT_MS = 75000;
+
+// Everything from the server goes in with textContent or text nodes, never as HTML.
+function appendFormatted(parent, text) {
+  text.split(/(\*\*[^*]+\*\*)/).forEach(function (part) {
+    if (part.length > 4 && part.slice(0, 2) === '**' && part.slice(-2) === '**') {
+      var strong = document.createElement('strong');
+      strong.textContent = part.slice(2, -2);
+      parent.appendChild(strong);
+    } else if (part !== '') {
+      parent.appendChild(document.createTextNode(part));
+    }
+  });
+}
+
+function addBubble(kind, text, plain) {
+  var bubble = document.createElement('div');
+  bubble.className = 'bubble ' + kind;
+  if (plain) bubble.textContent = text;
+  else appendFormatted(bubble, text);
+  messages.appendChild(bubble);
+  messages.scrollTop = messages.scrollHeight;
+  return bubble;
+}
+
+function setBusy(busy) {
+  send.disabled = busy;
+  input.disabled = busy;
+}
+
+form.addEventListener('submit', function (event) {
+  event.preventDefault();
+  var question = input.value.trim();
+  if (question === '') return;
+  addBubble('user', question, true);
+  input.value = '';
+  setBusy(true);
+  var thinking = addBubble('thinking', 'thinking...', true);
+  var controller = new AbortController();
+  var timer = setTimeout(function () { controller.abort(); }, TIMEOUT_MS);
+
+  fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question: question }),
+    signal: controller.signal
+  }).then(function (response) {
+    return response.json().catch(function () { return null; }).then(function (data) {
+      thinking.remove();
+      if (!response.ok) {
+        addBubble('error', data && typeof data.error === 'string' ? data.error : 'Something went wrong. Please try again.', true);
+      } else if (data && data.kind === 'answer' && typeof data.text === 'string' && typeof data.source === 'string') {
+        var bubble = addBubble('agent', data.text, false);
+        var source = document.createElement('div');
+        source.className = 'source';
+        source.textContent = 'Source: ' + data.source;
+        bubble.appendChild(source);
+      } else if (data && data.kind === 'refusal' && typeof data.text === 'string') {
+        addBubble('refusal', data.text, true);
+      } else {
+        addBubble('error', 'Unexpected reply from the server.', true);
+      }
+    });
+  }).catch(function () {
+    thinking.remove();
+    addBubble('error', controller.signal.aborted ? 'The answer took too long. Please try again.' : 'Could not reach the server. Is it still running?', true);
+  }).then(function () {
+    clearTimeout(timer);
+    setBusy(false);
+    input.focus();
+  });
+});
+</script>
+</body>
+</html>
