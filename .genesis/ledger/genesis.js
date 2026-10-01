@@ -1543,6 +1543,10 @@ function decisionHash(d) {
   const parts = [d.id, d.what, d.why ?? "", ...d.rejected, "|", d.breaksAt ?? "", ...d.evidence, "|", d.supersedes ?? ""];
   return createHash2("sha256").update(parts.join("\n")).digest("hex").slice(0, 16);
 }
+function activeDecisions(decisions) {
+  const replaced = new Set(decisions.flatMap((d) => d.supersedes ? [d.supersedes] : []));
+  return decisions.filter((d) => !replaced.has(d.id));
+}
 
 // src/initiatives/howItWorks.ts
 import { existsSync as existsSync6, readFileSync as readFileSync5, readdirSync as readdirSync5 } from "node:fs";
@@ -1557,6 +1561,7 @@ import { join as join6 } from "node:path";
 var MAX_GLOSS = 300;
 var MAX_QUESTIONS_PER_DECISION = 3;
 var MAX_QUESTIONS = 10;
+var ENRICH_PROMPT_VERSION = 2;
 var ENRICHMENT_SCHEMA = {
   type: "object",
   properties: {
@@ -1607,8 +1612,13 @@ async function buildKeyedCache(decisions, cache, eligible, call, parse) {
       } catch {
       }
     }
+    const attempt = async (feedback) => parse(await call(d, feedback));
     try {
-      next[key] = parse(await call(d));
+      try {
+        next[key] = await attempt();
+      } catch (first) {
+        next[key] = await attempt(`Your previous reply was rejected: ${first instanceof Error ? first.message : String(first)}. Fix exactly that and answer again.`);
+      }
       generated.push(d.id);
     } catch (e) {
       failed.push({ id: d.id, reason: e instanceof Error ? e.message : String(e) });
@@ -1616,9 +1626,11 @@ async function buildKeyedCache(decisions, cache, eligible, call, parse) {
   }
   return { cache: next, generated, reused, failed };
 }
-var buildCache = (decisions, cache, io) => buildKeyedCache(decisions, cache, worthEnriching, (d) => io.enrich(d), parseEnrichment);
+var buildCache = (decisions, cache, io) => buildKeyedCache(activeDecisions(decisions), cache, worthEnriching, (d, fb) => io.enrich(d, fb), parseEnrichment);
 function pickQuestions(decisions, cache) {
-  const lists = decisions.map((d) => ({ d, qs: cache[decisionHash(d)]?.questions ?? [] })).filter((x) => x.qs.length > 0);
+  const active = activeDecisions(decisions);
+  const ordered = [...active.filter((d) => d.breaksAt), ...active.filter((d) => !d.breaksAt)];
+  const lists = ordered.map((d) => ({ d, qs: cache[decisionHash(d)]?.questions ?? [] })).filter((x) => x.qs.length > 0);
   const out2 = [];
   for (let round = 0; out2.length < MAX_QUESTIONS; round++) {
     let added = false;
@@ -1632,13 +1644,15 @@ function pickQuestions(decisions, cache) {
   }
   return out2;
 }
-function enrichmentPrompt(d) {
+function enrichmentPrompt(d, feedback) {
   return [
+    ...feedback ? [feedback, ""] : [],
     "You write study material for someone who must explain, in a technical interview, a project they built with AI.",
     "Use ONLY the decision record between the markers. Do not add or invent any fact, number, tool or file that is not in it.",
     "Use the real technical term (embedding, JSON, vector database) and define it in the same sentence. Never invent new words for concepts.",
     `Return: "gloss" = one or two plain sentences (max ${MAX_GLOSS} characters) saying what was chosen and why;`,
     `"questions" = 1 to ${MAX_QUESTIONS_PER_DECISION} questions a technical interviewer would ask about THIS decision, each with "mustMention" = the facts from the record a good answer must contain.`,
+    "The first question must press on the tradeoff: why not the rejected alternative, or what breaks as the project grows (scale, limits), whichever the record states.",
     "",
     "<<<DECISION",
     `id: ${d.id}`,
@@ -1689,8 +1703,8 @@ function runClaudeJson(prompt, schema, bin = "claude", model = "haiku") {
   }
 }
 function nodeEnrichIo(bin = "claude") {
-  return { async enrich(d) {
-    return runClaudeJson(enrichmentPrompt(d), ENRICHMENT_SCHEMA, bin);
+  return { async enrich(d, feedback) {
+    return runClaudeJson(enrichmentPrompt(d, feedback), ENRICHMENT_SCHEMA, bin);
   } };
 }
 
@@ -3297,7 +3311,7 @@ function renderCard(project, d, c) {
 var cardEligible = (d) => Boolean(d.why) && d.evidence.length > 0;
 function planDrafts(project, decisions, cache, existing) {
   const out2 = [];
-  for (const d of decisions) {
+  for (const d of activeDecisions(decisions)) {
     const draft = cache[decisionHash(d)];
     if (!cardEligible(d) || !draft) continue;
     const file = `${cardId(project, d.id)}.md`;
@@ -3310,8 +3324,9 @@ function planDrafts(project, decisions, cache, existing) {
   }
   return out2;
 }
-function cardPrompt(d) {
+function cardPrompt(d, feedback) {
   return [
+    ...feedback ? [feedback, ""] : [],
     "You write one short study card (English) for someone who must explain, in a technical interview, a project they built with AI.",
     "Use ONLY the decision record between the markers. Do not add or invent any fact, number, tool or file that is not in it.",
     "Use the real technical term (embedding, JSON, vector database) and define it in the same sentence. Never invent new words for concepts. Short sentences, no idioms, no emojis.",
@@ -3660,7 +3675,8 @@ ${renderDesignAudit(findings)}`);
     if (!argv.includes("--no-llm")) {
       let prior = {};
       try {
-        prior = JSON.parse(readFileSync12(cachePath, "utf8"));
+        const saved = JSON.parse(readFileSync12(cachePath, "utf8"));
+        if (saved.promptVersion === ENRICH_PROMPT_VERSION && saved.entries) prior = saved.entries;
       } catch {
       }
       const r = await buildCache(decisions, prior, nodeEnrichIo(process.env.GENESIS_CLAUDE_BIN));
@@ -3670,7 +3686,7 @@ ${renderDesignAudit(findings)}`);
     }
     mkdirSync7(docsDir, { recursive: true });
     writeFileSync8(join15(docsDir, "HOW-IT-WORKS.md"), renderHowItWorks(basename(cwd), decisions, cache));
-    if (cache) writeFileSync8(cachePath, `${JSON.stringify(cache, null, 2)}
+    if (cache) writeFileSync8(cachePath, `${JSON.stringify({ promptVersion: ENRICH_PROMPT_VERSION, entries: cache }, null, 2)}
 `);
     out(`Wrote docs/HOW-IT-WORKS.md from ${decisions.length} decision${decisions.length === 1 ? "" : "s"}.`);
     process.exit(0);
@@ -3691,7 +3707,7 @@ ${renderDesignAudit(findings)}`);
     } catch {
     }
     const bin = process.env.GENESIS_CLAUDE_BIN;
-    const r = await buildKeyedCache(decisions, prior, cardEligible, async (d) => runClaudeJson(cardPrompt(d), CARD_SCHEMA, bin), parseCardDraft);
+    const r = await buildKeyedCache(activeDecisions(decisions), prior, cardEligible, async (d, feedback) => runClaudeJson(cardPrompt(d, feedback), CARD_SCHEMA, bin), parseCardDraft);
     out(`Model calls: ${r.generated.length} generated, ${r.reused.length} reused from cache${r.failed.length ? `, ${r.failed.length} failed` : ""}.`);
     for (const f of r.failed) out(`failed: ${f.id} \u2014 ${f.reason}`);
     const existing = {};

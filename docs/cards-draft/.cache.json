@@ -1,0 +1,648 @@
+{
+  "ce17550215b3fa20": {
+    "topic": "Performance-driven model selection",
+    "learn": "Measured load time (51 s vs 7 s) and token generation speed (6-7 s per token vs 25 tokens/s) showed llama3.1:8b exceeded the 60 s Ollama timeout, prompting a switch to llama3.2:3b on 8 GB RAM.",
+    "choose": {
+      "question": "Why was the 8B model rejected?",
+      "options": [
+        "Load time and token generation speed exceeded the 60 s Ollama timeout",
+        "The 3B model is a newer version",
+        "The 8B model requires more than 8 GB of RAM"
+      ],
+      "correct": "A",
+      "whyNot": [
+        {
+          "option": "B",
+          "text": "Model age was not the deciding factor."
+        },
+        {
+          "option": "C",
+          "text": "The issue was speed to meet the timeout, not RAM."
+        }
+      ]
+    },
+    "reveal": {
+      "answer": "The 8B model took 51 s to load and 6-7 s per token, exceeding 60 s. The 3B loaded in 7 s and generated 25 tokens/s.",
+      "interview": "We measured the 8B model couldn't respond fast enough within 60 seconds on 8 GB RAM."
+    },
+    "open": {
+      "question": "How did they approach selecting between the 8B, intermediate, and 3B models?",
+      "keys": [
+        [
+          "Measured performance metrics",
+          "Measured load time and token generation speed",
+          "Measured response time constraints"
+        ],
+        [
+          "Skipped intermediate models",
+          "Went straight to the 3B model",
+          "Did not test Phi-3.5-mini or similar"
+        ]
+      ]
+    },
+    "fill": {
+      "question": "The 8B model's 51 s load and 6-7 s per token generation could not satisfy the 60 s ____ maximum response time.",
+      "answers": [
+        "Ollama",
+        "inference"
+      ]
+    }
+  },
+  "3a3306d06fab2152": {
+    "topic": "Two-layer refusal in RAG agents",
+    "learn": "In a RAG (Retrieval-Augmented Generation) system where a model answers questions from documents, your agent decides refusals using two code layers: first, a retrieval score threshold rejects low-confidence matches without calling the model; second, if documents pass, the model outputs NOT_IN_DOCS to refuse unanswerable questions. Code-based refusal is deterministic and testable, avoiding hallucination.",
+    "choose": {
+      "question": "To handle refusals in your RAG agent, what approach did you take?",
+      "options": [
+        "Single layer: only check if the retrieval score exceeds a threshold",
+        "Two layers: check the retrieval score threshold, then check if the model outputs NOT_IN_DOCS",
+        "Single layer: rely entirely on the model to decide when to refuse"
+      ],
+      "correct": "B",
+      "whyNot": [
+        {
+          "option": "A",
+          "text": "The threshold alone was measured to refuse only 2 of 8 must-refuse questions, so a second layer was needed."
+        },
+        {
+          "option": "C",
+          "text": "Small local models hallucinate easily, so leaving refusal to the model alone risks false answers."
+        }
+      ]
+    },
+    "reveal": {
+      "answer": "Two layers make refusal deterministic and testable. The threshold alone caught only 2 of 8 must-refuse questions; the model's NOT_IN_DOCS signal caught the other 6, so both were kept.",
+      "interview": "We use a retrieval score threshold, and if documents pass that, we check if the model outputs NOT_IN_DOCS to refuse."
+    },
+    "open": {
+      "question": "Why did measuring the threshold-only approach lead to keeping both layers instead of removing one?",
+      "keys": [
+        [
+          "The threshold alone refused only 2 of 8 must-refuse questions",
+          "The threshold was insufficient by itself"
+        ],
+        [
+          "The model's NOT_IN_DOCS signal refused the other 6 cases",
+          "The model layer caught additional cases the threshold missed"
+        ]
+      ]
+    },
+    "fill": {
+      "question": "The two-layer approach uses a retrieval ____ that filters low-confidence results with a model NOT_IN_DOCS signal to prevent hallucination.",
+      "answers": [
+        "score",
+        "threshold",
+        "similarity"
+      ]
+    }
+  },
+  "aaf352c509638765": {
+    "topic": "Local RAG without APIs",
+    "learn": "This project uses transformers.js (a library that runs neural network models locally) for embeddings and Ollama (a local LLM runtime) for generation. No external APIs. This enables offline operation, requires no API keys, and anyone can reproduce it by cloning the repo without paying or creating accounts.",
+    "choose": {
+      "question": "Why did the author choose transformers.js and Ollama instead of Voyage AI and Claude API?",
+      "options": [
+        "The company policy required all data to remain on-premises for security",
+        "Cost-free and offline-capable; anyone can reproduce it without API keys or paid accounts",
+        "These tools produce better embeddings and generation quality than commercial APIs"
+      ],
+      "correct": "B",
+      "whyNot": [
+        {
+          "option": "A",
+          "text": "No company security requirement was mentioned; the author lacked API access on their plan."
+        },
+        {
+          "option": "C",
+          "text": "Quality differences were not the decision factor; cost and reproducibility were."
+        }
+      ]
+    },
+    "reveal": {
+      "answer": "Offline operation and reproducibility for anyone cloning the repository without API keys. The author had no API access on their plan, making local solutions essential.",
+      "interview": "We needed to build locally because we had no API access and wanted anyone to clone and run the evals without paying or creating accounts."
+    },
+    "open": {
+      "question": "What two technical components enable this fully local pipeline?",
+      "keys": [
+        [
+          "transformers.js",
+          "embedding model",
+          "Xenova/all-MiniLM-L6-v2"
+        ],
+        [
+          "Ollama",
+          "local generation",
+          "text generation runtime"
+        ]
+      ]
+    },
+    "fill": {
+      "question": "This project creates embeddings using ____ , which runs locally without external API calls.",
+      "answers": [
+        "transformers.js",
+        "the Xenova/all-MiniLM-L6-v2 model"
+      ]
+    }
+  },
+  "fbba5fcad17be115": {
+    "topic": "Deterministic evals instead of LLM judge",
+    "learn": "Use deterministic rule-based checks for retrieval accuracy, whether text matches context (faithfulness), and correct refusal—instead of an LLM judge. This avoids API costs and is repeatable, but catches missing or invented facts better than subtle semantic errors.",
+    "choose": {
+      "question": "When evaluating a RAG chat agent's responses, which approach avoids API dependency and cost while remaining repeatable?",
+      "options": [
+        "Use Claude API to evaluate whether each response is grounded in retrieved context",
+        "Only verify exact keyword matches between retrieved documents and the generated response",
+        "Use deterministic rules to check retrieval accuracy, faithfulness, and correct refusal"
+      ],
+      "correct": "C",
+      "whyNot": [
+        {
+          "option": "A",
+          "text": "API was unavailable on the plan; external LLM evaluation adds cost and dependency."
+        },
+        {
+          "option": "B",
+          "text": "Keyword matching cannot verify that retrieved context actually supports the response's meaning."
+        }
+      ]
+    },
+    "reveal": {
+      "answer": "Deterministic evals check retrieval, faithfulness, and refusal using explicit rules, not an LLM. They catch missing or invented facts but miss subtle semantic errors.",
+      "interview": "We chose deterministic rules instead of an LLM judge for cost and repeatability, though they miss nuanced semantic errors."
+    },
+    "open": {
+      "question": "Why is a faithfulness check that verifies whether generated text matches retrieved context called a proxy measure?",
+      "keys": [
+        [
+          "catches missing facts",
+          "detects invented details",
+          "identifies ungrounded specifics"
+        ],
+        [
+          "misses subtle errors",
+          "doesn't catch semantic drift",
+          "allows fluent but slightly wrong outputs"
+        ]
+      ]
+    },
+    "fill": {
+      "question": "A faithfulness check that verifies whether text matches retrieved context is a ____ measure because it catches explicit errors but not nuanced semantic mistakes.",
+      "answers": [
+        "proxy",
+        "imperfect",
+        "indirect"
+      ]
+    }
+  },
+  "19df5e6749b4c64e": {
+    "topic": "In-Memory JSON Search Index",
+    "learn": "An embedding is a vector representing meaning. Store embeddings in one JSON file (data/index.json) in memory, retrieve top-k matches using cosine similarity—the distance metric between vectors—and validate model revision, 384 dimensions, and known sources on load.",
+    "choose": {
+      "question": "When should you replace this JSON file with a vector database?",
+      "options": [
+        "When you have thousands of chunks",
+        "When you want user authentication",
+        "When you support multiple languages"
+      ],
+      "correct": "A",
+      "whyNot": [
+        {
+          "option": "B",
+          "text": "Authentication is separate from data storage."
+        },
+        {
+          "option": "C",
+          "text": "Language support does not require changing storage."
+        }
+      ]
+    },
+    "reveal": {
+      "answer": "The JSON approach works for 10 chunks, but thousands of articles need a vector database and retrieval tuning becomes complex.",
+      "interview": "We used JSON for the demo's 10 chunks, but production search at scale needs a vector database."
+    },
+    "open": {
+      "question": "What must validation check when loading data/index.json, and what does a mismatch tell the user?",
+      "keys": [
+        [
+          "model",
+          "revision",
+          "model version"
+        ],
+        [
+          "384 dimensions",
+          "vector size",
+          "embedding dimensions"
+        ],
+        [
+          "known sources",
+          "chunk sources"
+        ],
+        [
+          "run npm run ingest",
+          "rerun ingest",
+          "re-ingest"
+        ]
+      ]
+    },
+    "fill": {
+      "question": "A JSON file with ____ chunks works for this demo but requires a vector database for production scale.",
+      "answers": [
+        "10"
+      ]
+    }
+  },
+  "636ebb2229a73758": {
+    "topic": "RAG chunking for support documents",
+    "learn": "In RAG (Retrieval-Augmented Generation—a system retrieving documents to augment AI responses), chunk support content by markdown sections (##), keep numbered procedures whole, and split only above 1,500 characters. This prevents procedural steps from being separated while maintaining retrieval quality.",
+    "choose": {
+      "question": "When chunking support documents for RAG, why exclude the title and intro text before the first markdown section (##)?",
+      "options": [
+        "They add retrieval noise without providing necessary context",
+        "They exceed the 1,500 character limit that applies to each chunk",
+        "Including them provides wider context that improves retrieval relevance"
+      ],
+      "correct": "A",
+      "whyNot": [
+        {
+          "option": "B",
+          "text": "The 1,500 character limit applies to splitting within sections, not to title/intro content."
+        },
+        {
+          "option": "C",
+          "text": "Wider context causes retrieval noise; excluding title/intro improves search quality."
+        }
+      ]
+    },
+    "reveal": {
+      "answer": "Title and intro text add retrieval noise without improving matches. Chunks should start at the first ## section for cleaner results.",
+      "interview": "We exclude titles and intros because they reduce the signal-to-noise ratio in retrieval."
+    },
+    "open": {
+      "question": "What two key design constraints shape this chunking strategy for support documents?",
+      "keys": [
+        [
+          "Numbered lists and procedures must not be separated across chunks",
+          "procedural steps must remain whole",
+          "procedures like refunds cannot be split"
+        ],
+        [
+          "Chunks are limited to 1,500 characters when splitting between sections",
+          "the 1,500 character threshold determines where chunks break",
+          "large sections split only at the size boundary"
+        ]
+      ]
+    },
+    "fill": {
+      "question": "To prevent procedural steps from being separated, numbered lists should be kept ____ when chunking by markdown sections.",
+      "answers": [
+        "whole",
+        "together",
+        "intact",
+        "unsplit"
+      ]
+    }
+  },
+  "f090925039654a26": {
+    "topic": "RAG agent system prompts",
+    "learn": "Changing a RAG agent's system prompt from \"concisely\" to \"answer completely\" improved recall from 0.36 to 0.86, meaning it retrieved and stated more facts. RAG is retrieval-augmented generation: the model retrieves relevant documents before generating answers.",
+    "choose": {
+      "question": "What improved recall from 0.36 to 0.86?",
+      "options": [
+        "Increased token limit to fix early stopping at 55 tokens",
+        "Upgraded the document retrieval algorithm",
+        "Changed system prompt from 'concisely' to 'answer completely'"
+      ],
+      "correct": "C",
+      "whyNot": [
+        {
+          "option": "A",
+          "text": "Model stopped at 55 tokens intentionally, not due to a limit."
+        },
+        {
+          "option": "B",
+          "text": "No retriever changes documented between V0 and V2."
+        }
+      ]
+    },
+    "reveal": {
+      "answer": "V2 changed the system prompt to 'answer completely' instead of 'concisely,' preventing the model from stopping early and missing facts.",
+      "interview": "We changed the system prompt from 'concisely' to 'answer completely' to make the model state all relevant information."
+    },
+    "open": {
+      "question": "How did V2 improve quality beyond recall?",
+      "keys": [
+        [
+          "Invented numbers dropped from 1 to 0",
+          "Zero hallucinated numbers in V2"
+        ],
+        [
+          "Traps refused increased to 6 of 6",
+          "All misleading prompts correctly rejected"
+        ]
+      ]
+    },
+    "fill": {
+      "question": "The system ____ from 'concisely' to 'answer completely' eliminated invented facts.",
+      "answers": [
+        "prompt changed",
+        "prompt shift"
+      ]
+    }
+  },
+  "5615f3942b161ae6": {
+    "topic": "Refusal threshold margin in chat agents",
+    "learn": "Refusal threshold is the confidence score below which a chat agent refuses to answer. The team chose 0.30 because testing found that all values 0–0.40 produced identical results, so 0.30 was selected for its 0.12 safety margin rather than statistical optimization.",
+    "choose": {
+      "question": "Why did the team choose 0.30 instead of searching for the statistically optimal threshold?",
+      "options": [
+        "All thresholds from 0 to 0.40 performed identically, so they chose 0.30 for its 0.12 margin above the lowest answerable score.",
+        "The value 0.30 is the industry-standard default for chat agent refusals.",
+        "0.30 produced the highest F1 score when tested against their evaluation dataset."
+      ],
+      "correct": "A",
+      "whyNot": [
+        {
+          "option": "B",
+          "text": "There is no universal industry standard; each system needs its own threshold tuned to its own data."
+        },
+        {
+          "option": "C",
+          "text": "The plateau effect meant multiple values performed equally, so this was not an optimization problem where one value beats others."
+        }
+      ]
+    },
+    "reveal": {
+      "answer": "All thresholds 0–0.40 gave identical end-to-end results. The team chose 0.30 for its 0.12 margin above the 0.42 score where legitimate questions still answered correctly.",
+      "interview": "It was a performance plateau, so we chose based on margin safety rather than finding a peak."
+    },
+    "open": {
+      "question": "What evidence would justify selecting a different threshold for another domain?",
+      "keys": [
+        [
+          "the plateau behavior could be different in other data",
+          "the lowest answerable score might be higher or lower",
+          "performance at each threshold depends on the training data"
+        ],
+        [
+          "the acceptable margin depends on the domain's use case and tolerance for refusal",
+          "the cost of refusing legitimate questions versus false positives is domain-specific",
+          "safety and reliability requirements vary by application and user expectations"
+        ]
+      ]
+    },
+    "fill": {
+      "question": "The team maintained a ____ between their 0.30 threshold and the 0.42 lowest answerable score to prevent over-refusing legitimate paraphrases.",
+      "answers": [
+        "margin",
+        "safety margin",
+        "buffer",
+        "gap",
+        "cushion"
+      ]
+    }
+  },
+  "e86141b690dd28cf": {
+    "topic": "Section-level retrieval scoring in RAG",
+    "learn": "Retrieval-augmented generation (RAG) scores whether the right information was retrieved. With only 3 articles and 10 chunks, article-level scoring is too easy; section-level scoring (article plus heading) is more discriminative.",
+    "choose": {
+      "question": "Why did the team choose section-level over article-level scoring?",
+      "options": [
+        "Sections create better embeddings than articles.",
+        "With 3 articles and 10 chunks, top 3 results would likely hit all articles, making article-level scoring insufficiently selective.",
+        "The vector database cannot retrieve at article level."
+      ],
+      "correct": "B",
+      "whyNot": [
+        {
+          "option": "A",
+          "text": "Embedding quality doesn't depend on granularity."
+        },
+        {
+          "option": "C",
+          "text": "Vector databases work at any granularity; the choice reflects evaluation needs."
+        }
+      ]
+    },
+    "reveal": {
+      "answer": "Top 3 retrieval at article level would cover most or all 3 articles, making the metric too permissive. Section-level (article plus heading) is more selective.",
+      "interview": "With only 3 articles and 10 chunks, article-level scoring was too easy to distinguish good retrieval."
+    },
+    "open": {
+      "question": "What role does sourceHeadings data in golden.json play in section-level evaluation?",
+      "keys": [
+        [
+          "Each question is labeled with sourceHeadings, identifying the article and heading of sections that answer it"
+        ],
+        [
+          "The evaluation in score.ts compares retrieved sections against these labeled sourceHeadings"
+        ]
+      ]
+    },
+    "fill": {
+      "question": "The evaluation uses ____ and heading pairs as the atomic unit for scoring whether retrieval was correct.",
+      "answers": [
+        "article"
+      ]
+    }
+  },
+  "d779ee3d3fb9fbb7": {
+    "topic": "Preventing Prompt Injection in RAG Chat",
+    "learn": "Chunk metadata (search result sources) is used instead of model output for citations. Delimiter characters < and > are neutralised to prevent forged prompts. Responses are capped because the model has no tools, so the worst case is a wrong answer.",
+    "choose": {
+      "question": "Why does the chat agent source citations from chunk metadata instead of model output?",
+      "options": [
+        "To prevent the model from forging false citations",
+        "To encrypt source data for user privacy",
+        "To reduce the computational cost of responses"
+      ],
+      "correct": "A",
+      "whyNot": [
+        {
+          "option": "B",
+          "text": "Encryption protects data confidentiality; metadata sourcing prevents injection risk."
+        },
+        {
+          "option": "C",
+          "text": "The design addresses injection security, not computational efficiency."
+        }
+      ]
+    },
+    "reveal": {
+      "answer": "Using metadata for sources prevents the model from forging citations. Since the model has no tools, the worst risk is a wrong answer, so response length is capped to contain damage.",
+      "interview": "We take citations directly from metadata, not model output, to prevent forged sources, and we cap responses because the worst case is just a wrong answer."
+    },
+    "open": {
+      "question": "Name the three defence mechanisms and explain why each one is necessary given that the model has no tools.",
+      "keys": [
+        [
+          "delimiter neutralisation",
+          "neutralising runs of < or >",
+          "preventing forged prompt boundaries"
+        ],
+        [
+          "metadata-sourced citations",
+          "Source from chunk metadata",
+          "preventing the model from forging sources"
+        ],
+        [
+          "capped response length",
+          "limited reply length",
+          "containing damage from wrong answers"
+        ]
+      ]
+    },
+    "fill": {
+      "question": "The chat agent prevents prompt injection through delimiter neutralisation, extracting Source from ____, and capping response length.",
+      "answers": [
+        "chunk metadata",
+        "metadata",
+        "retrieved chunks"
+      ]
+    }
+  },
+  "bbe352f42984bb44": {
+    "topic": "Sentinel Token Refusal in RAG Systems",
+    "learn": "When using RAG (retrieval-augmented generation, where an AI model answers using external documents), add a sentinel token like NOT_IN_DOCS to signal answers outside the knowledge base. Detect this token anywhere in the response, not just on exact match, because small models often add words around the token.",
+    "choose": {
+      "question": "When using NOT_IN_DOCS as a sentinel token for RAG refusal, when should you trigger a refusal?",
+      "options": [
+        "Only when the entire response is exactly NOT_IN_DOCS",
+        "Whenever NOT_IN_DOCS appears anywhere in the response",
+        "Only when NOT_IN_DOCS is the first token of the response"
+      ],
+      "correct": "B",
+      "whyNot": [
+        {
+          "option": "A",
+          "text": "Exact match misses cases where the model wraps the token with surrounding words."
+        },
+        {
+          "option": "C",
+          "text": "Position-only detection at the start misses tokens appearing elsewhere in the response."
+        }
+      ]
+    },
+    "reveal": {
+      "answer": "Check for the token anywhere in the response to catch refusals even when the model adds surrounding text.",
+      "interview": "We detect NOT_IN_DOCS anywhere in the output because small models often add words around the sentinel."
+    },
+    "open": {
+      "question": "Why check for the sentinel token based on its presence rather than its position?",
+      "keys": [
+        [
+          "small models add surrounding words",
+          "the model wraps the token with text",
+          "models add content around the token"
+        ],
+        [
+          "showing wrong information is worse than false refusal",
+          "false negatives are more harmful than extra refusals",
+          "missed refusals are the worst outcome"
+        ]
+      ]
+    },
+    "fill": {
+      "question": "When a small language model includes your sentinel token among surrounding words, a position-____ detection strategy ensures you catch the refusal signal.",
+      "answers": [
+        "independent",
+        "agnostic",
+        "flexible"
+      ]
+    }
+  },
+  "b9a86a2c1775a9c4": {
+    "topic": "Type-aware number comparison in faithfulness scoring",
+    "learn": "A faithfulness scorer (a system that evaluates if an AI response matches source facts) prevents false positives by comparing numbers by type and treating the question's own numbers as known. This stops '$5' from matching '5 days' and prevents correct model repetitions from being flagged.",
+    "choose": {
+      "question": "What does the type-aware number comparison prevent in a faithfulness scorer?",
+      "options": [
+        "It stops the model from repeating any number mentioned in the question",
+        "It prevents '$5' matching '5 days' AND prevents flagging correct model repetitions of question numbers",
+        "It removes all numeric values from consideration"
+      ],
+      "correct": "B",
+      "whyNot": [
+        {
+          "option": "A",
+          "text": "Allowing model repetition helps, but type comparison is still needed to prevent '$5' matching '5 days'."
+        },
+        {
+          "option": "C",
+          "text": "Removing all numbers would let hallucinations with invented amounts pass undetected."
+        }
+      ]
+    },
+    "reveal": {
+      "answer": "Type comparison prevents '$5' matching '5 days', and treating question numbers as known stops correct repetitions from being flagged.",
+      "interview": "Type-aware matching blocks cross-type mismatches while the model safely repeats question facts."
+    },
+    "open": {
+      "question": "The scorer flags 'costs $5' as hallucinated when the question says 'ships in 5-7 days'. What caused this and how does type-aware comparison fix it?",
+      "keys": [
+        [
+          "bare-number matching",
+          "comparing numbers without type context"
+        ],
+        [
+          "type comparison prevents cross-category matches",
+          "recognizing model repetitions of source numbers"
+        ]
+      ]
+    },
+    "fill": {
+      "question": "The faithfulness scorer prevents false positives by comparing numbers based on their ____ , so '$5' won't match '5 days'.",
+      "answers": [
+        "type",
+        "category"
+      ]
+    }
+  },
+  "b91ab420414daade": {
+    "topic": "Golden set evaluation for RAG chat agents",
+    "learn": "A golden set is a curated collection of test questions used to measure model performance. For RAG chat agents (which retrieve source articles before answering), include paraphrases and near-miss traps to test real performance on the material the model uses.",
+    "choose": {
+      "question": "Why hold out questions from prompt tuning in your golden set?",
+      "options": [
+        "To prove the model generalizes to domains beyond the training articles",
+        "To test real performance without overfitting to the tuning set",
+        "To show the model works on any question regardless of training material"
+      ],
+      "correct": "B",
+      "whyNot": [
+        {
+          "option": "A",
+          "text": "All questions come from the same three articles the model reads, so held-out questions do not prove generalization beyond that source."
+        },
+        {
+          "option": "C",
+          "text": "Held-out questions come from the same articles; they prevent tuning bias but do not guarantee domain transfer."
+        }
+      ]
+    },
+    "reveal": {
+      "answer": "Held-out questions measure true performance without tuning bias. Results apply only to these articles, not other domains.",
+      "interview": "We held out six questions to prevent tuning overfitting, which gives us a clearer performance reading."
+    },
+    "open": {
+      "question": "How does a 23-question golden set limit confidence in the accuracy metrics?",
+      "keys": [
+        [
+          "One question moves accuracy by 4 percentage points",
+          "Each question significantly shifts the accuracy metric"
+        ],
+        [
+          "The numbers demonstrate relative performance patterns only",
+          "Results show performance on these source articles, not general accuracy"
+        ]
+      ]
+    },
+    "fill": {
+      "question": "With only 23 questions in the golden set, each one changes the evaluation ____ by approximately 4 percentage points.",
+      "answers": [
+        "metric",
+        "score"
+      ]
+    }
+  }
+}
