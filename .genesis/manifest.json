@@ -11,11 +11,11 @@
     },
     ".genesis/hooks/check-loop-contract.js": {
       "version": "0.16.0",
-      "sha256": "4dee086b81903ef0b2836a614e90a79694ad72d4c314d1b4dec6dbc8d6633602"
+      "sha256": "13735dc779a025a281236f5b41b4d7039563ac55cbba181f90cad3a373e79c82"
     },
     ".genesis/ledger/genesis.js": {
       "version": "0.16.0",
-      "sha256": "86377f9df27b04bfc2a7f5770b241a036d1e5f231668503c4851407bc14b3546"
+      "sha256": "19fd08e3ffd3e09a8d2fa722ebd29357f90b7d867e67201e8fb3f2bf8dc6a45c"
     },
     ".genesis/well-architected/architecture.md": {
       "version": "0.16.0",

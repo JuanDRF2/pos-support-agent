@@ -45,7 +45,7 @@ function readStdin() {
 }
 
 /** Files derived from the ledger by `genesis how-it-works` — never hand-edited. */
-const GENERATED_DOCS = ['docs/HOW-IT-WORKS.md', 'docs/.how-it-works.cache.json', 'docs/cards-draft/.cache.json']
+const GENERATED_DOCS = ['docs/HOW-IT-WORKS.md', 'docs/.how-it-works.cache.json', 'docs/cards-draft/.cache.json', 'docs/MANUAL.md', 'docs/.manual.cache.json']
 
 /**
  * True when `filePath` is inside `dir` (or is `dir` itself).
