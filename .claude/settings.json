@@ -21,7 +21,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .genesis/guard/check.js"
+            "command": "node .genesis/guard/check.js",
+            "timeout": 30
           }
         ]
       },
@@ -30,7 +31,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .genesis/hooks/check-loop-contract.js"
+            "command": "node .genesis/hooks/check-loop-contract.js",
+            "timeout": 30
           }
         ]
       }
