@@ -62,63 +62,6 @@
         }
       ]
     },
-    "aaf352c509638765": {
-      "gloss": "Built with transformers.js (a library for creating embeddings—numerical text representations) and Ollama (a local LLM for text generation), enabling a fully offline, free stack where anyone can clone and run evaluations without API keys.",
-      "questions": [
-        {
-          "q": "You rejected Voyage AI for embeddings and Claude for both generation and evaluation. What made a fully local approach necessary rather than a hosted alternative?",
-          "mustMention": [
-            "Author has no API access on their plan",
-            "Voyage AI requires API keys and costs money",
-            "Claude requires API access",
-            "Free and offline after setup enables anyone to clone and run"
-          ]
-        },
-        {
-          "q": "Walk through how transformers.js handles embeddings in your pipeline. What does choosing a local approach mean for how text gets converted to vectors?",
-          "mustMention": [
-            "transformers.js uses Xenova/all-MiniLM-L6-v2 model",
-            "Embeddings (numerical representations) are computed locally without external API calls",
-            "Implementation in src/rag/embedder.ts"
-          ]
-        },
-        {
-          "q": "Why was it important that anyone could clone this project and run the evals without an account—what does that unlock?",
-          "mustMention": [
-            "Anyone can clone and run evaluations without an account or API key",
-            "Works fully offline after initial setup",
-            "No cost to reproduce or iterate"
-          ]
-        }
-      ]
-    },
-    "fbba5fcad17be115": {
-      "gloss": "Selected deterministic evaluations for retrieval, faithfulness, and refusal checks over an LLM judge, eliminating API key and cost requirements while ensuring repeatable results.",
-      "questions": [
-        {
-          "q": "Why did you choose deterministic checks over an LLM judge despite their potential limitations?",
-          "mustMention": [
-            "no API access on the plan"
-          ]
-        },
-        {
-          "q": "What are the specific limitations of your faithfulness evaluation checks?",
-          "mustMention": [
-            "faithfulness checks are a proxy for meaning",
-            "catch missing or invented specifics",
-            "will not catch a fluent, subtly wrong sentence"
-          ]
-        },
-        {
-          "q": "What types of evaluations does your deterministic system perform?",
-          "mustMention": [
-            "retrieval",
-            "faithfulness",
-            "correct refusal"
-          ]
-        }
-      ]
-    },
     "19df5e6749b4c64e": {
       "gloss": "Stored the search index as a single JSON file in memory with cosine similarity top-k retrieval because it's simple for a demo with 10 chunks; validation on load checks model, revision, 384 dimensions, and sources, prompting reimport if mismatched.",
       "questions": [
@@ -364,6 +307,75 @@
             "Held-out questions have been reviewed multiple times by the author",
             "Only weakly independent from tuning and threshold setting",
             "One held-out question changes accuracy by approximately 25 percentage points"
+          ]
+        }
+      ]
+    },
+    "2d4d4a2722d4d471": {
+      "gloss": "Chose local embeddings—vector representations of text—via transformers.js (Xenova/all-MiniLM-L6-v2) and Ollama, a local language model inference engine, for generation. This kept the project free with no API keys, fully offline-capable, and enabled anyone to clone and run evals without an account.",
+      "questions": [
+        {
+          "q": "Why did you choose a fully local stack with transformers.js and Ollama instead of using hosted alternatives like Voyage AI for embeddings or Claude for generation?",
+          "mustMention": [
+            "Voyage AI requires an API key and has a cost",
+            "Claude is a hosted API requiring an API key and has a cost",
+            "Project had to be free and 100% local",
+            "No API key requirement",
+            "Must be offline-capable after setup",
+            "Anyone must be able to clone and run evals without an account"
+          ]
+        },
+        {
+          "q": "What are embeddings, and why use transformers.js with the Xenova/all-MiniLM-L6-v2 model?",
+          "mustMention": [
+            "Embeddings are vector representations of text",
+            "transformers.js is a JavaScript library for running transformer models",
+            "Xenova/all-MiniLM-L6-v2 is the specific embedding model used",
+            "Local approach requires no hosted service or account"
+          ]
+        },
+        {
+          "q": "Describe Ollama's role in your system and how it supports your project constraints.",
+          "mustMention": [
+            "Ollama is a local language model inference engine",
+            "Performs LLM generation in your RAG pipeline",
+            "Requires no hosted API or API key",
+            "Keeps the project free and fully offline-capable"
+          ]
+        }
+      ]
+    },
+    "afd1b6645c064e44": {
+      "gloss": "Chose deterministic evals (retrieval, faithfulness, correct refusal) instead of Claude-as-judge to keep the project free and local—no API keys, no costs, repeatable. The tradeoff: faithfulness checks catch missing or invented facts but miss subtle meaning errors in fluent responses.",
+      "questions": [
+        {
+          "q": "Why is using Claude-as-judge unacceptable for this project, and what's the cost of deterministic evals instead?",
+          "mustMention": [
+            "Claude-as-judge needs an API key",
+            "Claude-as-judge has a cost",
+            "The project must be local and free",
+            "Deterministic evals require no key and have no cost",
+            "Faithfulness checks are a proxy for meaning",
+            "Catch missing or invented specifics, but not fluent, subtly wrong sentences"
+          ]
+        },
+        {
+          "q": "How do your deterministic evaluations work for retrieval, faithfulness, and correct refusal?",
+          "mustMention": [
+            "Retrieval evaluation",
+            "Faithfulness evaluation",
+            "Correct refusal evaluation",
+            "Deterministic approach makes them repeatable",
+            "Implementation evidence in src/evals/score.ts, src/evals/report.ts, src/evals/run.ts"
+          ]
+        },
+        {
+          "q": "You catch missing or invented facts deterministically, but not subtle meaning errors—what types of errors are you living with?",
+          "mustMention": [
+            "Faithfulness checks catch missing or invented specifics",
+            "Don't catch fluent, subtly wrong sentences",
+            "Faithfulness is a proxy for meaning, not a true measure",
+            "Subtle meaning errors slip through"
           ]
         }
       ]

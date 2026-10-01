@@ -96,105 +96,6 @@
       ]
     }
   },
-  "aaf352c509638765": {
-    "topic": "Local RAG without APIs",
-    "learn": "This project uses transformers.js (a library that runs neural network models locally) for embeddings and Ollama (a local LLM runtime) for generation. No external APIs. This enables offline operation, requires no API keys, and anyone can reproduce it by cloning the repo without paying or creating accounts.",
-    "choose": {
-      "question": "Why did the author choose transformers.js and Ollama instead of Voyage AI and Claude API?",
-      "options": [
-        "The company policy required all data to remain on-premises for security",
-        "Cost-free and offline-capable; anyone can reproduce it without API keys or paid accounts",
-        "These tools produce better embeddings and generation quality than commercial APIs"
-      ],
-      "correct": "B",
-      "whyNot": [
-        {
-          "option": "A",
-          "text": "No company security requirement was mentioned; the author lacked API access on their plan."
-        },
-        {
-          "option": "C",
-          "text": "Quality differences were not the decision factor; cost and reproducibility were."
-        }
-      ]
-    },
-    "reveal": {
-      "answer": "Offline operation and reproducibility for anyone cloning the repository without API keys. The author had no API access on their plan, making local solutions essential.",
-      "interview": "We needed to build locally because we had no API access and wanted anyone to clone and run the evals without paying or creating accounts."
-    },
-    "open": {
-      "question": "What two technical components enable this fully local pipeline?",
-      "keys": [
-        [
-          "transformers.js",
-          "embedding model",
-          "Xenova/all-MiniLM-L6-v2"
-        ],
-        [
-          "Ollama",
-          "local generation",
-          "text generation runtime"
-        ]
-      ]
-    },
-    "fill": {
-      "question": "This project creates embeddings using ____ , which runs locally without external API calls.",
-      "answers": [
-        "transformers.js",
-        "the Xenova/all-MiniLM-L6-v2 model"
-      ]
-    }
-  },
-  "fbba5fcad17be115": {
-    "topic": "Deterministic evals instead of LLM judge",
-    "learn": "Use deterministic rule-based checks for retrieval accuracy, whether text matches context (faithfulness), and correct refusal—instead of an LLM judge. This avoids API costs and is repeatable, but catches missing or invented facts better than subtle semantic errors.",
-    "choose": {
-      "question": "When evaluating a RAG chat agent's responses, which approach avoids API dependency and cost while remaining repeatable?",
-      "options": [
-        "Use Claude API to evaluate whether each response is grounded in retrieved context",
-        "Only verify exact keyword matches between retrieved documents and the generated response",
-        "Use deterministic rules to check retrieval accuracy, faithfulness, and correct refusal"
-      ],
-      "correct": "C",
-      "whyNot": [
-        {
-          "option": "A",
-          "text": "API was unavailable on the plan; external LLM evaluation adds cost and dependency."
-        },
-        {
-          "option": "B",
-          "text": "Keyword matching cannot verify that retrieved context actually supports the response's meaning."
-        }
-      ]
-    },
-    "reveal": {
-      "answer": "Deterministic evals check retrieval, faithfulness, and refusal using explicit rules, not an LLM. They catch missing or invented facts but miss subtle semantic errors.",
-      "interview": "We chose deterministic rules instead of an LLM judge for cost and repeatability, though they miss nuanced semantic errors."
-    },
-    "open": {
-      "question": "Why is a faithfulness check that verifies whether generated text matches retrieved context called a proxy measure?",
-      "keys": [
-        [
-          "catches missing facts",
-          "detects invented details",
-          "identifies ungrounded specifics"
-        ],
-        [
-          "misses subtle errors",
-          "doesn't catch semantic drift",
-          "allows fluent but slightly wrong outputs"
-        ]
-      ]
-    },
-    "fill": {
-      "question": "A faithfulness check that verifies whether text matches retrieved context is a ____ measure because it catches explicit errors but not nuanced semantic mistakes.",
-      "answers": [
-        "proxy",
-        "imperfect",
-        "indirect"
-      ]
-    }
-  },
   "19df5e6749b4c64e": {
     "topic": "In-Memory JSON Search Index",
     "learn": "An embedding is a vector representing meaning. Store embeddings in one JSON file (data/index.json) in memory, retrieve top-k matches using cosine similarity—the distance metric between vectors—and validate model revision, 384 dimensions, and known sources on load.",
@@ -642,6 +543,111 @@
       "answers": [
         "metric",
         "score"
+      ]
+    }
+  },
+  "2d4d4a2722d4d471": {
+    "topic": "Offline AI Stack Without Hosted APIs",
+    "learn": "The project uses transformers.js embeddings (numerical representations of text converted locally) with the Xenova/all-MiniLM-L6-v2 model and Ollama generation (running a language model offline) to eliminate API keys and costs.",
+    "choose": {
+      "question": "Why did the project reject Voyage AI for embeddings?",
+      "options": [
+        "It produces lower-quality embeddings than open-source alternatives",
+        "It requires an API key and costs money",
+        "It requires significant computational resources that transformers.js cannot handle"
+      ],
+      "correct": "B",
+      "whyNot": [
+        {
+          "option": "A",
+          "text": "Quality was not the reason stated in the decision record; cost and API key requirements were the issue."
+        },
+        {
+          "option": "C",
+          "text": "Resource constraints were not mentioned; the decision was driven by cost and API key requirements."
+        }
+      ]
+    },
+    "reveal": {
+      "answer": "Voyage AI requires an API key and costs money. The project needed a free, offline-after-setup solution with no external dependencies or costs.",
+      "interview": "We rejected Voyage AI because it needs a paid API key, and our project had to be completely free and run locally."
+    },
+    "open": {
+      "question": "Why does the project use two separate local components (transformers.js for embeddings and Ollama for generation) instead of a single hosted service?",
+      "keys": [
+        [
+          "transformers.js",
+          "Xenova",
+          "all-MiniLM-L6-v2",
+          "local embeddings",
+          "embedding model"
+        ],
+        [
+          "Ollama",
+          "local generation",
+          "offline language model",
+          "local LLM",
+          "text generation"
+        ]
+      ]
+    },
+    "fill": {
+      "question": "The project integrates _____ as its local embedding model through transformers.js to eliminate the need for external services and API keys.",
+      "answers": [
+        "Xenova/all-MiniLM-L6-v2",
+        "all-MiniLM-L6-v2",
+        "Xenova"
+      ]
+    }
+  },
+  "afd1b6645c064e44": {
+    "topic": "Deterministic evaluation in RAG chat",
+    "learn": "Deterministic evals (evaluation without an AI model) need no API key and cost nothing, but only detect missing facts, not subtle semantic errors.",
+    "choose": {
+      "question": "Why did you use deterministic evaluation instead of an LLM judge like Claude?",
+      "options": [
+        "Deterministic checks detect all faithfulness errors more quickly",
+        "No API key needed, no cost, repeatable results; they miss subtle semantic errors",
+        "LLM judges cannot evaluate retrieval accuracy"
+      ],
+      "correct": "B",
+      "whyNot": [
+        {
+          "option": "A",
+          "text": "Deterministic checks cannot detect subtle semantic errors."
+        },
+        {
+          "option": "C",
+          "text": "LLM judges can evaluate retrieval, but this choice prioritized no cost and local operation."
+        }
+      ]
+    },
+    "reveal": {
+      "answer": "Deterministic evals need no API key or cost and give repeatable results. They detect missing or invented facts but miss subtle semantic errors.",
+      "interview": "We chose deterministic evals because they are free and repeatable, though they miss subtle incorrectness."
+    },
+    "open": {
+      "question": "Name the three types of deterministic evaluation your system performs.",
+      "keys": [
+        [
+          "retrieval",
+          "retrieval accuracy"
+        ],
+        [
+          "faithfulness",
+          "whether facts are supported by sources"
+        ],
+        [
+          "correct refusal",
+          "refusing out-of-scope questions"
+        ]
+      ]
+    },
+    "fill": {
+      "question": "Your system checks retrieval accuracy and faithfulness to sources, plus ____ to avoid answering out-of-scope questions.",
+      "answers": [
+        "correct refusal",
+        "refusal"
       ]
     }
   }

@@ -1750,15 +1750,16 @@ var cell = (s) => s.replace(/\|/g, "\\|").replace(/\n/g, " ");
 function renderHowItWorks(projectName, decisions, cache) {
   const replacedBy = /* @__PURE__ */ new Map();
   for (const d of decisions) if (d.supersedes) replacedBy.set(d.supersedes, d.id);
-  const rows = decisions.map((d) => {
+  const current = decisions.filter((d) => !replacedBy.has(d.id));
+  const rows = current.map((d) => {
     const alt = d.rejected.length ? d.rejected.map(cell).join("; ") : MISSING;
     const src = d.evidence.length ? d.evidence.map((e) => `\`${e}\``).join(", ") : MISSING;
-    const status = replacedBy.has(d.id) ? ` (reemplazada por ${replacedBy.get(d.id)})` : "";
-    return `| ${cell(d.what)}${status} | ${alt} | ${src} |`;
+    return `| ${cell(d.what)} | ${alt} | ${src} |`;
   });
   const detail = decisions.map((d) => {
+    if (replacedBy.has(d.id)) return `### ${d.id} \u2014 ${d.what} (reemplazada por ${replacedBy.get(d.id)})`;
     const lines = [
-      `### ${d.id} \u2014 ${d.what}${replacedBy.has(d.id) ? ` (reemplazada por ${replacedBy.get(d.id)})` : ""}`,
+      `### ${d.id} \u2014 ${d.what}`,
       ...cache?.[decisionHash(d)] ? [`> **En palabras simples:** ${cache[decisionHash(d)].gloss}`] : [],
       `- **Por qu\xE9:** ${d.why ?? MISSING}`,
       `- **Alternativas descartadas:** ${d.rejected.length ? d.rejected.join("; ") : MISSING}`,
@@ -1766,7 +1767,7 @@ function renderHowItWorks(projectName, decisions, cache) {
       `- **Fuente:** ${d.evidence.length ? d.evidence.map((e) => `\`${e}\``).join(", ") : MISSING}`,
       `- **Registrada:** ${d.at}`
     ];
-    return lines.filter(Boolean).join("\n");
+    return lines.join("\n");
   });
   return [
     GENERATED_MARKER,
@@ -3826,14 +3827,16 @@ ${renderDesignAudit(findings)}`);
     const docsDir = join16(cwd, "docs");
     const cachePath = join16(docsDir, ".how-it-works.cache.json");
     let cache;
-    if (!argv.includes("--no-llm")) {
-      let prior = {};
-      try {
-        const saved = JSON.parse(readFileSync13(cachePath, "utf8"));
-        if (saved.promptVersion === ENRICH_PROMPT_VERSION && saved.entries) prior = saved.entries;
-      } catch {
-      }
-      const r = await buildCache(decisions, prior, nodeEnrichIo(process.env.GENESIS_CLAUDE_BIN));
+    let prior;
+    try {
+      const saved = JSON.parse(readFileSync13(cachePath, "utf8"));
+      if (saved.promptVersion === ENRICH_PROMPT_VERSION && saved.entries) prior = saved.entries;
+    } catch {
+    }
+    if (argv.includes("--no-llm")) {
+      cache = prior;
+    } else {
+      const r = await buildCache(decisions, prior ?? {}, nodeEnrichIo(process.env.GENESIS_CLAUDE_BIN));
       cache = r.cache;
       out(`Model calls: ${r.generated.length} generated, ${r.reused.length} reused from cache${r.failed.length ? `, ${r.failed.length} failed` : ""}.`);
       for (const f of r.failed) out(`failed: ${f.id} \u2014 ${f.reason}`);
@@ -3984,7 +3987,7 @@ ${renderDesignAudit(findings)}`);
     let hash = sourcesHash(cwd, []);
     if (!argv.includes("--no-llm")) {
       const extra = argv.flatMap((a, i) => a === "--source" && argv[i + 1] ? [argv[i + 1]] : []);
-      const used = [.../* @__PURE__ */ new Set(["README.md", "CASE-STUDY.md", ...extra])].filter((f) => existsSync16(join16(cwd, f)));
+      const used = [.../* @__PURE__ */ new Set(["README.md", ...extra])].filter((f) => existsSync16(join16(cwd, f)));
       hash = sourcesHash(cwd, used);
       let cached;
       try {
@@ -4026,6 +4029,20 @@ ${renderDesignAudit(findings)}`);
         mkdirSync7(docsDir, { recursive: true });
         writeFileSync8(cachePath, `${JSON.stringify({ promptVersion: MANUAL_PROMPT_VERSION, sources: used, sourcesHash: hash, extract }, null, 2)}
 `);
+      }
+    }
+    if (argv.includes("--no-llm")) {
+      try {
+        const saved = JSON.parse(readFileSync13(cachePath, "utf8"));
+        const h = sourcesHash(cwd, saved.sources ?? []);
+        if (saved.promptVersion === MANUAL_PROMPT_VERSION && h === saved.sourcesHash) {
+          const v = verifyManual(parseManualExtract(saved.extract), cwd);
+          if (v.dropped.length === 0) {
+            extract = v.kept;
+            hash = h;
+          }
+        }
+      } catch {
       }
     }
     mkdirSync7(docsDir, { recursive: true });

@@ -15,7 +15,7 @@
     },
     ".genesis/ledger/genesis.js": {
       "version": "0.16.0",
-      "sha256": "19fd08e3ffd3e09a8d2fa722ebd29357f90b7d867e67201e8fb3f2bf8dc6a45c"
+      "sha256": "bdfc88844249c215c6a96132d41c029c9b5c5bb92cbab375e7ba28753ff15281"
     },
     ".genesis/well-architected/architecture.md": {
       "version": "0.16.0",

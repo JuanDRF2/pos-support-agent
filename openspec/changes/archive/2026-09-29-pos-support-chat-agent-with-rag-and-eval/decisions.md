@@ -109,3 +109,21 @@ Each record marks its affected artifacts stale in `state.yaml` until reconciled.
 - Breaks at: With 23 questions one question moves a percentage by 4 points (25 for a held-out one), so the numbers are a demonstration, not a general accuracy claim.
 - Evidence: src/evals/golden.json, src/evals/golden.ts, README.md
 
+## DEC-pos-support-chat-agent-with-rag-and-eval-15 — 2026-10-01
+- What: Fully local and free stack: transformers.js embeddings (Xenova/all-MiniLM-L6-v2) and Ollama generation, no hosted API
+- Affects: (none)
+- Supersedes: DEC-pos-support-chat-agent-with-rag-and-eval-03
+- Why: The project had to be free and 100% local: no key and no cost, offline after setup, and anyone can clone it and run the evals without an account.
+- Rejected: Voyage AI for embeddings: needs a key and has a cost
+- Rejected: Claude for generation: a hosted API needs a key and has a cost, and the project must be local and free
+- Rejected: Claude as LLM-as-judge: same reason, key and cost
+- Evidence: src/rag/embedder.ts, src/agent/ollama.ts
+
+## DEC-pos-support-chat-agent-with-rag-and-eval-16 — 2026-10-01
+- What: Deterministic evals (retrieval, faithfulness, correct refusal) instead of an LLM judge
+- Affects: (none)
+- Supersedes: DEC-pos-support-chat-agent-with-rag-and-eval-04
+- Why: No key, no cost, repeatable. The price is that faithfulness checks are a proxy for meaning: they catch missing or invented specifics but not a fluent, subtly wrong sentence.
+- Rejected: Claude as LLM-as-judge for faithfulness: needs a key and has a cost, and the project must be local and free
+- Evidence: src/evals/score.ts, src/evals/report.ts, src/evals/run.ts
+

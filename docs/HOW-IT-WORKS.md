@@ -1,5 +1,5 @@
 <!-- GENERATED from the decision ledger by `genesis how-it-works`. Do not edit by hand. -->
-<!-- ledger-digest: ed3fb8e05e66c4d1 -->
+<!-- ledger-digest: 0ca92ffba5b78925 -->
 
 # How pos-support-agent works
 
@@ -9,18 +9,17 @@
 |---|---|---|
 | Switch default generation model from llama3.1:8b to llama3.2:3b after measuring on 8 GB RAM | llama3.1:8b (7-8B Q4): too slow on 8 GB of RAM, 51 s load and about 6-7 s per token, cannot fit the 60 s timeout; Intermediate model (Phi-3.5-mini or newer Llama 3.2) before the 3B: Juan went straight to llama3.2:3b after measuring, an explicit decision | `src/config.ts`, `.env.example` |
 | Refusal is decided in code in two layers: a retrieval score threshold (no model call) plus a NOT_IN_DOCS signal from the model | Refusal left to the LLM: small local models invent easily | `src/agent/answer.ts` |
-| Fully local stack: transformers.js embeddings (Xenova/all-MiniLM-L6-v2) and Ollama generation, no hosted API | Voyage AI for embeddings: needs a key and cost; Claude for generation: no API access, project must be local and free; Claude as LLM-as-judge: no API access | `src/rag/embedder.ts` |
-| Deterministic evals (retrieval, faithfulness, correct refusal) instead of an LLM judge | Claude as LLM-as-judge for faithfulness: no API access on the plan | `src/evals/score.ts`, `src/evals/report.ts`, `src/evals/run.ts` |
 | Search index stored as a single JSON file (data/index.json) held in memory, with cosine top-k, validated on load | no hay decisión escrita | `src/rag/store.ts`, `src/rag/ingest.ts` |
 | Chunk by `##` section, keeping numbered lists whole and splitting only above 1,500 characters between blocks | Indexing the title and intro before the first ## : they only add retrieval noise | `src/rag/chunker.ts` |
 | System prompt changed from "concisely" to "answer completely" (V2) | V0 "concisely": recall 0.36, dropped time periods; V1 "every step, then any timing or condition": recall 0.55, 1 false refusal and 1 invented number; Further tuning: stopped on purpose, more iterations against 17 questions would overfit | `src/agent/answer.ts` |
 | Refusal threshold set to 0.30 with pass marks 90% / 85% / 95% | 0.35 provisional: margin only 0.07; 0.40: margin only 0.02; 0.45: refuses legitimate paraphrase g09 | `src/config.ts`, `src/evals/passmarks.ts` |
 | Retrieval scored by section (article plus heading in top 3) instead of by article | Article-level retrieval scoring: too easy with 10 chunks and 3 articles | `src/evals/golden.json`, `src/evals/score.ts` |
-| Golden set written after the docs, with paraphrases, near-miss traps, injections and held-out questions (reemplazada por DEC-pos-support-chat-agent-with-rag-and-eval-14) | no hay decisión escrita | `src/evals/golden.json`, `src/evals/golden.ts` |
 | Prompt-injection mitigations: delimiter neutralisation, separate sections, source taken from metadata, capped replies | no hay decisión escrita | `src/agent/answer.ts` |
 | Treat any reply containing NOT_IN_DOCS anywhere as a refusal (token strict, position not) | Exact full-reply match of NOT_IN_DOCS: small models add words around it | `src/agent/answer.ts` |
 | Faithfulness scorer compares numbers by type and counts the question's own numbers as known | Comparing bare numbers: lets invented amounts pass | `src/evals/score.ts` |
 | Golden set of 23 questions written from the three articles after they were fixed, with 6 held-out questions, and its closeness to the source stated as a limit | no hay decisión escrita | `src/evals/golden.json`, `src/evals/golden.ts`, `README.md` |
+| Fully local and free stack: transformers.js embeddings (Xenova/all-MiniLM-L6-v2) and Ollama generation, no hosted API | Voyage AI for embeddings: needs a key and has a cost; Claude for generation: a hosted API needs a key and has a cost, and the project must be local and free; Claude as LLM-as-judge: same reason, key and cost | `src/rag/embedder.ts`, `src/agent/ollama.ts` |
+| Deterministic evals (retrieval, faithfulness, correct refusal) instead of an LLM judge | Claude as LLM-as-judge for faithfulness: needs a key and has a cost, and the project must be local and free | `src/evals/score.ts`, `src/evals/report.ts`, `src/evals/run.ts` |
 
 ## 2. Decisiones clave
 
@@ -40,21 +39,9 @@
 - **Fuente:** `src/agent/answer.ts`
 - **Registrada:** 2026-10-01
 
-### DEC-pos-support-chat-agent-with-rag-and-eval-03 — Fully local stack: transformers.js embeddings (Xenova/all-MiniLM-L6-v2) and Ollama generation, no hosted API
-> **En palabras simples:** Built with transformers.js (a library for creating embeddings—numerical text representations) and Ollama (a local LLM for text generation), enabling a fully offline, free stack where anyone can clone and run evaluations without API keys.
-- **Por qué:** Free, offline after setup, and anyone can clone it and run the evals without an account or API key. The author has no API access on their plan.
-- **Alternativas descartadas:** Voyage AI for embeddings: needs a key and cost; Claude for generation: no API access, project must be local and free; Claude as LLM-as-judge: no API access
-- **Qué se rompe primero al escalar:** no hay decisión escrita
-- **Fuente:** `src/rag/embedder.ts`
-- **Registrada:** 2026-10-01
+### DEC-pos-support-chat-agent-with-rag-and-eval-03 — Fully local stack: transformers.js embeddings (Xenova/all-MiniLM-L6-v2) and Ollama generation, no hosted API (reemplazada por DEC-pos-support-chat-agent-with-rag-and-eval-15)
 
-### DEC-pos-support-chat-agent-with-rag-and-eval-04 — Deterministic evals (retrieval, faithfulness, correct refusal) instead of an LLM judge
-> **En palabras simples:** Selected deterministic evaluations for retrieval, faithfulness, and refusal checks over an LLM judge, eliminating API key and cost requirements while ensuring repeatable results.
-- **Por qué:** No key, no cost, repeatable. The price is that faithfulness checks are a proxy for meaning: they catch missing or invented specifics but not a fluent, subtly wrong sentence.
-- **Alternativas descartadas:** Claude as LLM-as-judge for faithfulness: no API access on the plan
-- **Qué se rompe primero al escalar:** no hay decisión escrita
-- **Fuente:** `src/evals/score.ts`, `src/evals/report.ts`, `src/evals/run.ts`
-- **Registrada:** 2026-10-01
+### DEC-pos-support-chat-agent-with-rag-and-eval-04 — Deterministic evals (retrieval, faithfulness, correct refusal) instead of an LLM judge (reemplazada por DEC-pos-support-chat-agent-with-rag-and-eval-16)
 
 ### DEC-pos-support-chat-agent-with-rag-and-eval-05 — Search index stored as a single JSON file (data/index.json) held in memory, with cosine top-k, validated on load
 > **En palabras simples:** Stored the search index as a single JSON file in memory with cosine similarity top-k retrieval because it's simple for a demo with 10 chunks; validation on load checks model, revision, 384 dimensions, and sources, prompting reimport if mismatched.
@@ -97,11 +84,6 @@
 - **Registrada:** 2026-10-01
 
 ### DEC-pos-support-chat-agent-with-rag-and-eval-10 — Golden set written after the docs, with paraphrases, near-miss traps, injections and held-out questions (reemplazada por DEC-pos-support-chat-agent-with-rag-and-eval-14)
-- **Por qué:** Avoid golden-set circularity (questions derived from docs can be too easy) and overfitting of the threshold/prompt: 6 of 23 questions are held out and reported separately.
-- **Alternativas descartadas:** no hay decisión escrita
-- **Qué se rompe primero al escalar:** With 23 questions one question moves a percentage by about 4 points (25 for a held-out one), and the author wrote both articles and questions, so a clean score says little about general accuracy.
-- **Fuente:** `src/evals/golden.json`, `src/evals/golden.ts`
-- **Registrada:** 2026-10-01
 
 ### DEC-pos-support-chat-agent-with-rag-and-eval-11 — Prompt-injection mitigations: delimiter neutralisation, separate sections, source taken from metadata, capped replies
 > **En palabras simples:** Implemented prompt-injection mitigations: delimiter neutralisation prevents forgery of < or >, separate sections isolate user input, and the source attribution always comes from chunk metadata. Since the chat model has no tools, wrong or refused answers are the worst case, not API compromise.
@@ -135,6 +117,22 @@
 - **Fuente:** `src/evals/golden.json`, `src/evals/golden.ts`, `README.md`
 - **Registrada:** 2026-10-01
 
+### DEC-pos-support-chat-agent-with-rag-and-eval-15 — Fully local and free stack: transformers.js embeddings (Xenova/all-MiniLM-L6-v2) and Ollama generation, no hosted API
+> **En palabras simples:** Chose local embeddings—vector representations of text—via transformers.js (Xenova/all-MiniLM-L6-v2) and Ollama, a local language model inference engine, for generation. This kept the project free with no API keys, fully offline-capable, and enabled anyone to clone and run evals without an account.
+- **Por qué:** The project had to be free and 100% local: no key and no cost, offline after setup, and anyone can clone it and run the evals without an account.
+- **Alternativas descartadas:** Voyage AI for embeddings: needs a key and has a cost; Claude for generation: a hosted API needs a key and has a cost, and the project must be local and free; Claude as LLM-as-judge: same reason, key and cost
+- **Qué se rompe primero al escalar:** no hay decisión escrita
+- **Fuente:** `src/rag/embedder.ts`, `src/agent/ollama.ts`
+- **Registrada:** 2026-10-01
+
+### DEC-pos-support-chat-agent-with-rag-and-eval-16 — Deterministic evals (retrieval, faithfulness, correct refusal) instead of an LLM judge
+> **En palabras simples:** Chose deterministic evals (retrieval, faithfulness, correct refusal) instead of Claude-as-judge to keep the project free and local—no API keys, no costs, repeatable. The tradeoff: faithfulness checks catch missing or invented facts but miss subtle meaning errors in fluent responses.
+- **Por qué:** No key, no cost, repeatable. The price is that faithfulness checks are a proxy for meaning: they catch missing or invented specifics but not a fluent, subtly wrong sentence.
+- **Alternativas descartadas:** Claude as LLM-as-judge for faithfulness: needs a key and has a cost, and the project must be local and free
+- **Qué se rompe primero al escalar:** no hay decisión escrita
+- **Fuente:** `src/evals/score.ts`, `src/evals/report.ts`, `src/evals/run.ts`
+- **Registrada:** 2026-10-01
+
 ## 3. Preguntas de entrevista (10 de 10 posibles)
 
 1. **At what point would you need to switch from a JSON file to an actual vector database, and what becomes a problem as your system scales?**
@@ -152,18 +150,18 @@
 5. **Why add a retrieval threshold instead of letting the model refuse answers on its own?**
    - Hechos obligatorios: small local models invent/hallucinate easily; two-layer approach: threshold plus NOT_IN_DOCS signal; makes refusal deterministic and testable; measured data: threshold alone refused only 2 of 8 must-refuse cases, model's NOT_IN_DOCS signal refused the other 6
    - Fuente: DEC-pos-support-chat-agent-with-rag-and-eval-02 (`src/agent/answer.ts`)
-6. **You rejected Voyage AI for embeddings and Claude for both generation and evaluation. What made a fully local approach necessary rather than a hosted alternative?**
-   - Hechos obligatorios: Author has no API access on their plan; Voyage AI requires API keys and costs money; Claude requires API access; Free and offline after setup enables anyone to clone and run
-   - Fuente: DEC-pos-support-chat-agent-with-rag-and-eval-03 (`src/rag/embedder.ts`)
-7. **Why did you choose deterministic checks over an LLM judge despite their potential limitations?**
-   - Hechos obligatorios: no API access on the plan
-   - Fuente: DEC-pos-support-chat-agent-with-rag-and-eval-04 (`src/evals/score.ts`, `src/evals/report.ts`, `src/evals/run.ts`)
-8. **You chose not to index the title and intro text before the first ##. What specific problem would occur if you included them?**
+6. **You chose not to index the title and intro text before the first ##. What specific problem would occur if you included them?**
    - Hechos obligatorios: retrieval noise; cleaner retrieval surface; title and intro
    - Fuente: DEC-pos-support-chat-agent-with-rag-and-eval-06 (`src/rag/chunker.ts`)
-9. **Why did you move to 'answer completely' instead of sticking with more concise prompt versions?**
+7. **Why did you move to 'answer completely' instead of sticking with more concise prompt versions?**
    - Hechos obligatorios: V0 'concisely' had recall 0.36 and dropped time periods; V1 had recall 0.55, 1 false refusal, and 1 invented number; V2 'answer completely' achieved recall 0.86 with 0 invented numbers and 6 of 6 traps refused
    - Fuente: DEC-pos-support-chat-agent-with-rag-and-eval-07 (`src/agent/answer.ts`)
-10. **Why was article-level retrieval scoring insufficient for this evaluation, and how does your dataset size affect that decision?**
+8. **Why was article-level retrieval scoring insufficient for this evaluation, and how does your dataset size affect that decision?**
    - Hechos obligatorios: 3 articles; 10 chunks; top 3 results cover 30%; article-level scoring too easy
    - Fuente: DEC-pos-support-chat-agent-with-rag-and-eval-09 (`src/evals/golden.json`, `src/evals/score.ts`)
+9. **You've accepted that the worst case is a wrong or refused answer. What attack vectors are you not defending against, and why is that tradeoff acceptable here?**
+   - Hechos obligatorios: worst case is a wrong or refused answer; chat model has no tools
+   - Fuente: DEC-pos-support-chat-agent-with-rag-and-eval-11 (`src/agent/answer.ts`)
+10. **Why didn't you use exact full-reply matching of the NOT_IN_DOCS sentinel, and what problem does that approach have at scale?**
+   - Hechos obligatorios: small models add words around the sentinel; exact full-reply match would miss those cases; token-level approach detects the sentinel anywhere
+   - Fuente: DEC-pos-support-chat-agent-with-rag-and-eval-12 (`src/agent/answer.ts`)
