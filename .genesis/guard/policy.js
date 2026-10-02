@@ -92,7 +92,7 @@ function classifyEnvironment(cmd) {
 
 /** @param {string} cmd */
 function isHttpWrite(cmd) {
-  if (!/\b(curl|wget|xh|https?ie|http)\b/i.test(cmd)) return false
+  if (!/(?:^|[\s;|&("'`])(curl|wget|xh|https?ie|http)(?=\s)/i.test(cmd)) return false
   if (/-X\s*(POST|PUT|PATCH|DELETE)\b/i.test(cmd)) return true
   if (/--request\s*(POST|PUT|PATCH|DELETE)\b/i.test(cmd)) return true
   // Data-upload flags imply a write (curl defaults to POST when given data).
@@ -160,16 +160,152 @@ function isInfraProvisioning(cmd) {
   )
 }
 
-/** Sync/deploy/migration/release/import/bulk verbs (brief §4.5). */
+const VERBS = String.raw`migrate|migration|deploy|release|rollout|import|bulk[-\s]?update|token[-\s]?refresh|refresh[-\s]?token`
+
+/** A verb anywhere in a word — for a program's own name (`./scripts/deploy.sh`). */
+const RISKY_VERB = new RegExp(String.raw`\b(${VERBS})\b`, 'i')
+
+/**
+ * A verb standing as its own argument (`npm run deploy`, `db:migrate`, `release.yml`) — not a
+ * piece of a path, branch or slug (`src/deploy/`, `feat/import-wizard`, `add-import-flow`).
+ */
+const RISKY_VERB_ARG = new RegExp(String.raw`(?<![\w./-])(${VERBS})(?![\w/])`, 'i')
+
+/**
+ * Anything that runs text as code: a shell or wrapper (also by path, or at the end of a pipe),
+ * an interpreter given inline code, or command/process substitution. Its presence means no
+ * segment is skipped — nothing in the line can be assumed to be data.
+ */
+const RUNS_CODE = new RegExp(
+  [
+    /(?:^|[\s;|&(/])(sh|bash|zsh|dash|ksh|fish|eval|exec|source|ssh|watch|parallel|script)(?=\s|$)/.source,
+    /(?:^|[\s;|&(/])(node|deno|bun|python[\d.]*|ruby|perl|php)\s(?:[^;|&\n]*\s)?-[ecp]\b/.source,
+    /\bnpm\s+exec\b|\bnpx\s(?:[^;|&\n]*\s)?-c\b/.source,
+    /`|\$\(|[<>]\(/.source,
+  ].join('|'),
+  'i',
+)
+
+/**
+ * Programs that only read. A verb in their arguments is a search term or a label
+ * (`grep "aws-deploy"`, `git log --grep release`), not an action. `sed` is not here: its `e`
+ * and `w` commands run and write, even under `-n`.
+ */
+const READ_ONLY_SEGMENT =
+  /^(?:xargs\s+(?:-\S+\s+)*)?(grep|egrep|fgrep|rg|ag|cat|head|tail|less|more|wc|sort|uniq|cut|tr|column|ls|echo|printf|jq|yq|diff|stat|file|which|pwd|true|find\b(?![\s\S]*\s-(delete|exec|execdir|ok|okdir|fprint\w*|fls)\b)|git\s+(status|log|diff|show|branch|grep|rev-parse|ls-files|blame|describe|shortlog|reflog)|gh\s+(pr|run|release|issue|workflow|repo)\s+(view|list|checks|status|diff)|(npx\s+)?prisma\s+migrate\s+status)\b/i
+
+/** A quoted value of a message/label flag (`git commit -m "…"`, `gh pr create --title "…"`). */
+const MESSAGE_VALUE = /(\s(?:-m|--message|--grep|--title|--body|--notes|--subject)(?:\s+|=))("(?:[^"\\]|\\[\s\S])*"|'[^']*')/g
+
+/** The `-m "$(cat <<'EOF' … EOF)"` form agents use for multi-line commit messages. */
+const HEREDOC_MESSAGE = /^"\$\(cat\s+<<-?\s*'?(\w+)'?\n[\s\S]*\n\s*\1\s*\n?\s*\)\s*"$/
+
+/** @param {string} cmd */
+function blankMessageValues(cmd) {
+  return cmd.replace(MESSAGE_VALUE, (whole, flag, value) =>
+    /`|\$\(/.test(value) && !HEREDOC_MESSAGE.test(value) ? whole : `${flag}""`,
+  )
+}
+
+/**
+ * Split a command line into its segments on `;`, `|`, `||`, `&&`, `&` and newlines that sit
+ * outside quotes — `grep -E "a|b"` is one segment, and `2>&1` / `&>` are redirections.
+ * @param {string} cmd
+ */
+function segments(cmd) {
+  const out = []
+  let current = ''
+  let quote = ''
+  for (let i = 0; i < cmd.length; i++) {
+    const ch = cmd[i]
+    if (quote) {
+      if (ch === '\\' && quote === '"') {
+        current += ch + (cmd[++i] ?? '')
+        continue
+      }
+      if (ch === quote) quote = ''
+      current += ch
+      continue
+    }
+    if (ch === '\\') {
+      current += ch + (cmd[++i] ?? '')
+      continue
+    }
+    if (ch === '"' || ch === "'") {
+      quote = ch
+      current += ch
+      continue
+    }
+    const redirect = ch === '&' && (cmd[i - 1] === '>' || cmd[i + 1] === '>')
+    if ((ch === ';' || ch === '|' || ch === '&' || ch === '\n') && !redirect) {
+      out.push(current)
+      current = ''
+      continue
+    }
+    current += ch
+  }
+  out.push(current)
+  return out.map((s) => s.trim()).filter(Boolean)
+}
+
+/** Prefixes that hand the rest of a segment to another program. */
+const PREFIX = /^(?:(?:sudo|env|time|nohup|nice|command|exec|timeout\s+\S+|[A-Za-z_]\w*=\S*)\s+)*/
+
+/**
+ * The programs a segment runs: its leading program, and what `xargs` or `find -exec` runs.
+ * @param {string} segment
+ */
+function programs(segment) {
+  const found = [segment.replace(PREFIX, '').split(/\s+/)[0] ?? '']
+  const handedOff = /(?:\bxargs\s+(?:-\S+\s+)*|\s-exec(?:dir)?\s+)(\S+)/g
+  let m
+  while ((m = handedOff.exec(segment))) found.push(m[1])
+  return found
+}
+
+/**
+ * The segments of a command line that would actually run. Word-based checks match against
+ * these, not the raw line. Only two things are dropped: the quoted value of a message/label
+ * flag, and segments led by a read-only program. Every other quoted argument is kept —
+ * `npm run "deploy"` and `gh workflow run "Deploy to production"` are still deploys. A line
+ * that runs text as code (a shell, `-e`/`-c`, `$(…)`) keeps every segment.
+ * @param {string} cmd
+ */
+function executedSegments(cmd) {
+  const line = blankMessageValues(cmd)
+  const all = segments(line)
+  if (RUNS_CODE.test(line)) return all
+  return all.filter((segment) => !READ_ONLY_SEGMENT.test(segment))
+}
+
+/** @param {string} cmd */
+function executedText(cmd) {
+  return executedSegments(cmd).join(' ; ')
+}
+
+/**
+ * Sync/deploy/migration/release/import/bulk verbs (brief §4.5).
+ *
+ * These are plain words, so matching them anywhere in the line fired on searches, commit
+ * messages, paths and branch names — and a guard that asks every other command trains people
+ * to click Yes without reading. The verb counts where it would run: as a standalone argument of
+ * an executed segment, or in the name of the program itself.
+ * @param {string} cmd
+ */
 function isRiskyCliVerb(cmd) {
-  return /\b(migrate|migration|deploy|release|rollout|import|bulk[-\s]?update|token[-\s]?refresh|refresh[-\s]?token)\b/i.test(
-    cmd,
+  // Where text runs as code (`ssh host "./deploy.sh"`), every mention counts, as it always did.
+  const line = blankMessageValues(cmd)
+  if (RUNS_CODE.test(line)) return RISKY_VERB.test(line)
+  return executedSegments(cmd).some(
+    (segment) => RISKY_VERB_ARG.test(segment) || programs(segment).some((p) => RISKY_VERB.test(p)),
   )
 }
 
 /** @param {string} cmd */
 function isRiskyWrite(cmd) {
-  return isHttpWrite(cmd) || isDbWrite(cmd) || isCloudMutation(cmd) || isRiskyCliVerb(cmd)
+  // HTTP and SQL read every segment (`echo "UPDATE …" | psql`), minus message values only.
+  const line = blankMessageValues(cmd)
+  return isHttpWrite(line) || isDbWrite(line) || isCloudMutation(executedText(cmd)) || isRiskyCliVerb(cmd)
 }
 
 // --- Unambiguously destructive (block regardless of environment) -------------
@@ -190,6 +326,34 @@ function isDangerTarget(t) {
 }
 
 /**
+ * One `rm -rf` operand, judged by what the shell will actually delete. The shell strips quotes,
+ * so `rm -rf "/Users/x"` removes exactly what the unquoted form does — compare the target, not
+ * its quote characters (a quoted path with a space arrives as pieces; the first still starts
+ * with the `/`).
+ *
+ * A quoted variable gets one deliberate allowance. An unquoted `$DIR` has always counted as an
+ * unknown root, but `rm -rf "$SCRATCH"` and `rm -rf "$tmpdir"` are how scripts clean up their own
+ * scratch directories, and the guard's block is never waived, so blocking every one would stall
+ * autonomous runs. What is blocked is the shape that turns an empty variable into the filesystem
+ * root: the variable on its own followed by a slash (`"$DIR/"`, `"${DIR}/"`, `"$DIR"/*`), which
+ * expands to `/` or `/*` when DIR is unset. A named subpath (`"$DIR/build"`) and the bare variable
+ * (`"$DIR"`, which becomes an empty operand and does nothing) stay allowed. HOME is always a real
+ * root, so it stays blocked however it is written. Replaying real command history, no command
+ * used the blocked shape.
+ * @param {string} operand
+ */
+function isDangerousRmOperand(operand) {
+  const target = operand.replace(/["']/g, '')
+  const quoted = target !== operand
+  if (quoted && target.startsWith('$')) {
+    if (/^\$\{?HOME\b/.test(target)) return true
+    if (/^\$\{?\w+\}?\/+\*?$/.test(target)) return true
+    return false
+  }
+  return isDangerTarget(target)
+}
+
+/**
  * `rm -rf` is only blocked when the target is dangerous (root, home, absolute,
  * wildcard, traversal). Project-local `rm -rf node_modules` stays allowed —
  * this reads the brief's "rm -rf → block" as "unambiguously destructive rm -rf".
@@ -200,12 +364,14 @@ function isDangerousRmRf(cmd) {
   let m
   while ((m = re.exec(cmd))) {
     const args = m[1]
-    if (!/(-\w*r|--recursive)/i.test(args)) continue
-    if (!/(-\w*f|--force)/i.test(args)) continue
+    // Flags are whole words: anchoring them keeps a hyphen inside a path (`store-outreach`)
+    // from reading as `-r`.
+    if (!/(?:^|\s)(?:-[a-z]*r[a-z]*|--recursive)(?=\s|$)/i.test(args)) continue
+    if (!/(?:^|\s)(?:-[a-z]*f[a-z]*|--force)(?=\s|$)/i.test(args)) continue
     const operands = args.replace(/(?:^|\s)-{1,2}[a-zA-Z]+/g, ' ').trim()
     const tokens = operands ? operands.split(/\s+/) : []
     if (tokens.length === 0) return true
-    if (tokens.some(isDangerTarget)) return true
+    if (tokens.some(isDangerousRmOperand)) return true
   }
   return false
 }
@@ -392,7 +558,7 @@ export function decide(payload) {
 
   // 1b. Infrastructure provisioning → a gate (ask), surfaced regardless of env. In autonomous
   //     mode it auto-approves so the IDE loop isn't blocked on a prompt.
-  if (isInfraProvisioning(command)) {
+  if (isInfraProvisioning(executedText(command))) {
     if (autonomous()) {
       return { action: 'allow', reason: 'infrastructure provisioning — auto-approved (autonomous mode)' }
     }

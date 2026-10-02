@@ -44,6 +44,9 @@ function readStdin() {
   }
 }
 
+/** Files derived from the ledger by `genesis how-it-works` — never hand-edited. */
+const GENERATED_DOCS = ['docs/HOW-IT-WORKS.md', 'docs/.how-it-works.cache.json', 'docs/cards-draft/.cache.json', 'docs/MANUAL.md', 'docs/.manual.cache.json']
+
 /**
  * True when `filePath` is inside `dir` (or is `dir` itself).
  * @param {string} cwd
@@ -505,6 +508,19 @@ function main() {
       block(
         'openspec decisions.md is written by `genesis decide` / `genesis reconcile`.\n' +
           'The agent cannot hand-edit the decision ledger — run the command so the staleness cascade fires.',
+      )
+    }
+  }
+
+  // 1b. docs/HOW-IT-WORKS.md (and its cache) are DERIVED from the decision ledger by
+  //     `genesis how-it-works`. A hand edit is a second source of truth that drifts — the
+  //     same reason decisions.md is helper-written. Checked on every path, like above.
+  for (const filePath of paths) {
+    if (GENERATED_DOCS.some((g) => resolve(cwd, g) === (isAbsolute(filePath) ? resolve(filePath) : resolve(cwd, filePath)))) {
+      block(
+        `${basename(filePath)} is generated from the decision ledger — it is never edited by hand.\n` +
+          'Record the decision with `genesis decide <id> "<what>" --why ... --evidence <file>`, then run\n' +
+          '`genesis how-it-works` to regenerate it.',
       )
     }
   }

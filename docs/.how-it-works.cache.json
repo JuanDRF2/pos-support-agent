@@ -1,0 +1,384 @@
+{
+  "promptVersion": 2,
+  "entries": {
+    "ce17550215b3fa20": {
+      "gloss": "Switched the default generation model to llama3.2:3b because the 8B model couldn't meet the 60-second Ollama timeout (51 s load time, 6-7 s/token generation). The 3B loaded in 7 s and generated at 25 tokens/s, meeting the constraint.",
+      "questions": [
+        {
+          "q": "The 8B model took 51 seconds to load and 6-7 seconds per token, well over your 60-second timeout constraint. Why did you choose to downgrade the model rather than optimize the timeout or the infrastructure?",
+          "mustMention": [
+            "51 s load",
+            "6-7 s per token",
+            "60 s Ollama timeout",
+            "measured performance failure"
+          ]
+        },
+        {
+          "q": "You mention Juan went straight to the 3B model after measuring the 8B. Why not test an intermediate model like Phi-3.5-mini first?",
+          "mustMention": [
+            "Juan went straight to llama3.2:3b",
+            "explicit decision",
+            "intermediate model"
+          ]
+        },
+        {
+          "q": "How did you validate that the 3B model's 7-second load time and 25 tokens/second generation rate would actually work for your use case?",
+          "mustMention": [
+            "7 s load",
+            "25 tokens/s",
+            "measured"
+          ]
+        }
+      ]
+    },
+    "3a3306d06fab2152": {
+      "gloss": "Refusal is handled in two layers: a retrieval score threshold (bypassing the model) and a NOT_IN_DOCS signal from the model. This makes refusal deterministic and testable, compensating for the local model's tendency to hallucinate when documents don't support an answer.",
+      "questions": [
+        {
+          "q": "Why add a retrieval threshold instead of letting the model refuse answers on its own?",
+          "mustMention": [
+            "small local models invent/hallucinate easily",
+            "two-layer approach: threshold plus NOT_IN_DOCS signal",
+            "makes refusal deterministic and testable",
+            "measured data: threshold alone refused only 2 of 8 must-refuse cases, model's NOT_IN_DOCS signal refused the other 6"
+          ]
+        },
+        {
+          "q": "Walk through how your two refusal layers work together. Why is the threshold a separate layer and not just part of the prompt?",
+          "mustMention": [
+            "retrieval score threshold (first layer, no model call)",
+            "NOT_IN_DOCS signal from the model (second layer)",
+            "threshold is a layer underneath/before the prompt",
+            "threshold alone is insufficient: only caught 2 of 8 must-refuse questions"
+          ]
+        },
+        {
+          "q": "How did you measure that both refusal layers are actually necessary?",
+          "mustMention": [
+            "tested 8 must-refuse questions",
+            "threshold caught 2, model signal caught the other 6",
+            "empirical measurement proves both layers carry load"
+          ]
+        }
+      ]
+    },
+    "19df5e6749b4c64e": {
+      "gloss": "Stored the search index as a single JSON file in memory with cosine similarity top-k retrieval because it's simple for a demo with 10 chunks; validation on load checks model, revision, 384 dimensions, and sources, prompting reimport if mismatched.",
+      "questions": [
+        {
+          "q": "At what point would you need to switch from a JSON file to an actual vector database, and what becomes a problem as your system scales?",
+          "mustMention": [
+            "JSON file works for 10 chunks in a demo",
+            "thousands of articles need an actual vector database",
+            "retrieval tuning becomes its own project at large scale"
+          ]
+        },
+        {
+          "q": "What does your system validate on load, and what should a user do if validation detects a mismatch?",
+          "mustMention": [
+            "validates model, revision, 384 dimensions, known sources, and finite numbers",
+            "mismatch tells the user to run npm run ingest"
+          ]
+        },
+        {
+          "q": "Explain how cosine similarity combined with top-k selection retrieves the most relevant chunks from your search index.",
+          "mustMention": [
+            "cosine similarity",
+            "top-k retrieval",
+            "finds most relevant chunks"
+          ]
+        }
+      ]
+    },
+    "636ebb2229a73758": {
+      "gloss": "Documents are chunked by markdown sections (##) with a 1,500 character limit, keeping numbered lists intact. Title and intro text are excluded from the search index to reduce retrieval noise and ensure procedural steps never split across chunks.",
+      "questions": [
+        {
+          "q": "You chose not to index the title and intro text before the first ##. What specific problem would occur if you included them?",
+          "mustMention": [
+            "retrieval noise",
+            "cleaner retrieval surface",
+            "title and intro"
+          ]
+        },
+        {
+          "q": "How does your chunking strategy enforce that numbered lists—like the steps in a partial refund procedure—never get separated?",
+          "mustMention": [
+            "numbered lists kept whole",
+            "procedures must never get separated",
+            "1,500 characters"
+          ]
+        },
+        {
+          "q": "Where in your implementation do you enforce these chunking rules?",
+          "mustMention": [
+            "src/rag/chunker.ts"
+          ]
+        }
+      ]
+    },
+    "f090925039654a26": {
+      "gloss": "Changed the system prompt from \"concisely\" to \"answer completely\" (V2), raising recall from 0.36 to 0.86 on evaluation questions while achieving zero hallucinated numbers and correctly refusing all traps. Stopped tuning there to avoid overfitting the 17-question test set.",
+      "questions": [
+        {
+          "q": "Why did you move to 'answer completely' instead of sticking with more concise prompt versions?",
+          "mustMention": [
+            "V0 'concisely' had recall 0.36 and dropped time periods",
+            "V1 had recall 0.55, 1 false refusal, and 1 invented number",
+            "V2 'answer completely' achieved recall 0.86 with 0 invented numbers and 6 of 6 traps refused"
+          ]
+        },
+        {
+          "q": "You tested three prompt versions but chose to stop after V2 rather than continue tuning. What was your reasoning?",
+          "mustMention": [
+            "evaluated against 17 tuning questions",
+            "further iterations against those 17 questions would overfit",
+            "V2 stopped on its own at 55 tokens despite better recall"
+          ]
+        }
+      ]
+    },
+    "5615f3942b161ae6": {
+      "gloss": "A refusal threshold of 0.30 filters low-confidence questions before model inference, chosen to maintain a 0.12 safety margin below the lowest valid score (0.42) while matching accuracy of higher thresholds; pass marks (90%/85%/95%) detect regressions.",
+      "questions": [
+        {
+          "q": "You rejected 0.40 and 0.35 in favor of 0.30. Why is the extra 0.07–0.10 margin necessary when values 0–0.40 all produced the same end-to-end accuracy?",
+          "mustMention": [
+            "0.30 chosen with 0.12 margin",
+            "Rejected 0.40 (margin 0.02) and 0.35 (margin 0.07)",
+            "Every value 0 to 0.40 gave the same end-to-end result",
+            "The data cannot tell values inside the plateau apart; it's a judgment about margin, not a measured optimum",
+            "The 0.42 bound comes from a single question"
+          ]
+        },
+        {
+          "q": "Your pass marks are 90%, 85%, and 95%. How do these thresholds protect against regressions, and what does 'one question of slack each' mean for sensitivity?",
+          "mustMention": [
+            "Pass marks 90% / 85% / 95%",
+            "Allow one question of slack each as regression alarms"
+          ]
+        },
+        {
+          "q": "You identified that 0.45 rejects a legitimate paraphrase scoring 0.42 but found no difference in accuracy across 0–0.40. Why can't you use that edge case to set the threshold more precisely?",
+          "mustMention": [
+            "0.45 refuses legitimate paraphrase",
+            "Top score 0.42",
+            "Every value 0 to 0.40 gave the same end-to-end result",
+            "The 0.42 bound comes from a single question"
+          ]
+        }
+      ]
+    },
+    "e86141b690dd28cf": {
+      "gloss": "Retrieval was scored by section (article + heading) instead of article alone because with only 3 articles and 10 chunks, top 3 results cover 30% of the index, making article-level scoring too coarse for evaluation.",
+      "questions": [
+        {
+          "q": "Why was article-level retrieval scoring insufficient for this evaluation, and how does your dataset size affect that decision?",
+          "mustMention": [
+            "3 articles",
+            "10 chunks",
+            "top 3 results cover 30%",
+            "article-level scoring too easy"
+          ]
+        },
+        {
+          "q": "How does the section-level approach connect to your test data to ground correctness?",
+          "mustMention": [
+            "sourceHeadings",
+            "each answerable question lists its answering section headings"
+          ]
+        },
+        {
+          "q": "Where would you point to verify this retrieval strategy is implemented correctly?",
+          "mustMention": [
+            "src/evals/golden.json",
+            "src/evals/score.ts"
+          ]
+        }
+      ]
+    },
+    "d779ee3d3fb9fbb7": {
+      "gloss": "Implemented prompt-injection mitigations: delimiter neutralisation prevents forgery of < or >, separate sections isolate user input, and the source attribution always comes from chunk metadata. Since the chat model has no tools, wrong or refused answers are the worst case, not API compromise.",
+      "questions": [
+        {
+          "q": "You've accepted that the worst case is a wrong or refused answer. What attack vectors are you not defending against, and why is that tradeoff acceptable here?",
+          "mustMention": [
+            "worst case is a wrong or refused answer",
+            "chat model has no tools"
+          ]
+        },
+        {
+          "q": "How does neutralising runs of three or more < or > actually stop prompt injection, and could an attacker use other delimiters to craft a prompt?",
+          "mustMention": [
+            "runs of three or more < or > are neutralised",
+            "prompt delimiters cannot be forged"
+          ]
+        },
+        {
+          "q": "Why is it critical that the Source line comes from chunk metadata rather than being generated by the model?",
+          "mustMention": [
+            "Source line comes from chunk metadata, never model text"
+          ]
+        }
+      ]
+    },
+    "bbe352f42984bb44": {
+      "gloss": "Chose token-level detection of NOT_IN_DOCS sentinel anywhere in a response to refuse uncertain answers from a RAG-based chat agent. This is more robust than exact full-reply matching because small language models often insert words around the sentinel.",
+      "questions": [
+        {
+          "q": "Why didn't you use exact full-reply matching of the NOT_IN_DOCS sentinel, and what problem does that approach have at scale?",
+          "mustMention": [
+            "small models add words around the sentinel",
+            "exact full-reply match would miss those cases",
+            "token-level approach detects the sentinel anywhere"
+          ]
+        },
+        {
+          "q": "What reliability tradeoff did you accept by treating any response containing NOT_IN_DOCS as a refusal?",
+          "mustMention": [
+            "showing a possibly-wrong answer is worse than an extra refusal",
+            "prioritizes correctness over always providing an answer"
+          ]
+        },
+        {
+          "q": "How does your token-level detection handle the sentinel appearing in different positions within the model's response?",
+          "mustMention": [
+            "NOT_IN_DOCS can appear anywhere in the response",
+            "token strict means positional location doesn't matter",
+            "catches cases where models embed it mid-sentence or with surrounding text"
+          ]
+        }
+      ]
+    },
+    "b9a86a2c1775a9c4": {
+      "gloss": "The faithfulness scorer now compares numbers by type and treats source-question numbers as known context, fixing false positives from coincidental matches and false negatives from correct model data repetition.",
+      "questions": [
+        {
+          "q": "Your rejected approach was bare-number comparison. What specific failures did that cause, and how does your solution address them?",
+          "mustMention": [
+            "bare-number comparison allowed invented \"$5.00\" to pass (false positive) because \"5\" matched within \"5-7 business days\"",
+            "bare-number comparison wrongly flagged the model repeating merchant data like \"six weeks ago\" (false negative)",
+            "solution: compare numbers by type and treat question-source numbers as known"
+          ]
+        },
+        {
+          "q": "How do you distinguish between numbers from the source question versus numbers the model hallucinated?",
+          "mustMention": [
+            "compares numbers by type",
+            "counts the question's own numbers as known",
+            "result: identifies source numbers separately from invented ones"
+          ]
+        },
+        {
+          "q": "Why could you ship this fix without retuning the evaluation threshold or regenerating the golden set?",
+          "mustMention": [
+            "fixed both specific failure modes: the false positive ($5/$5-7) and false negative (six weeks ago)",
+            "existing pass marks remain valid because these failures are now handled correctly",
+            "golden set already contained examples of these issues"
+          ]
+        }
+      ]
+    },
+    "b91ab420414daade": {
+      "gloss": "Built a 23-question evaluation set from the same articles the model reads, with 6 held-out questions, but noted the author created both materials, so accuracy only demonstrates performance on this specific content.",
+      "questions": [
+        {
+          "q": "You have 23 questions in your evaluation set. How sensitive is your accuracy metric to individual questions, and why does that matter?",
+          "mustMention": [
+            "With 23 questions, each question changes accuracy by approximately 4 percentage points",
+            "With held-out questions, each changes accuracy by approximately 25 percentage points",
+            "High sensitivity per question means the sample size is too small to be reliable",
+            "Numbers are demonstration of performance on this specific content, not general accuracy claims"
+          ]
+        },
+        {
+          "q": "You created your evaluation questions from the same three articles the model learns from. What's the implication for your accuracy score?",
+          "mustMention": [
+            "Questions came from the same three articles the model reads",
+            "The author wrote both the articles and the questions",
+            "A clean score only reflects performance on the author's specific wording and phrasing",
+            "This limits what the metric claims about generalization to other sources or phrasings"
+          ]
+        },
+        {
+          "q": "Your held-out questions are also from the same source articles. What makes them a weak test of true generalization?",
+          "mustMention": [
+            "6 held-out questions from the same source articles",
+            "Held-out questions have been reviewed multiple times by the author",
+            "Only weakly independent from tuning and threshold setting",
+            "One held-out question changes accuracy by approximately 25 percentage points"
+          ]
+        }
+      ]
+    },
+    "2d4d4a2722d4d471": {
+      "gloss": "Chose local embeddings—vector representations of text—via transformers.js (Xenova/all-MiniLM-L6-v2) and Ollama, a local language model inference engine, for generation. This kept the project free with no API keys, fully offline-capable, and enabled anyone to clone and run evals without an account.",
+      "questions": [
+        {
+          "q": "Why did you choose a fully local stack with transformers.js and Ollama instead of using hosted alternatives like Voyage AI for embeddings or Claude for generation?",
+          "mustMention": [
+            "Voyage AI requires an API key and has a cost",
+            "Claude is a hosted API requiring an API key and has a cost",
+            "Project had to be free and 100% local",
+            "No API key requirement",
+            "Must be offline-capable after setup",
+            "Anyone must be able to clone and run evals without an account"
+          ]
+        },
+        {
+          "q": "What are embeddings, and why use transformers.js with the Xenova/all-MiniLM-L6-v2 model?",
+          "mustMention": [
+            "Embeddings are vector representations of text",
+            "transformers.js is a JavaScript library for running transformer models",
+            "Xenova/all-MiniLM-L6-v2 is the specific embedding model used",
+            "Local approach requires no hosted service or account"
+          ]
+        },
+        {
+          "q": "Describe Ollama's role in your system and how it supports your project constraints.",
+          "mustMention": [
+            "Ollama is a local language model inference engine",
+            "Performs LLM generation in your RAG pipeline",
+            "Requires no hosted API or API key",
+            "Keeps the project free and fully offline-capable"
+          ]
+        }
+      ]
+    },
+    "afd1b6645c064e44": {
+      "gloss": "Chose deterministic evals (retrieval, faithfulness, correct refusal) instead of Claude-as-judge to keep the project free and local—no API keys, no costs, repeatable. The tradeoff: faithfulness checks catch missing or invented facts but miss subtle meaning errors in fluent responses.",
+      "questions": [
+        {
+          "q": "Why is using Claude-as-judge unacceptable for this project, and what's the cost of deterministic evals instead?",
+          "mustMention": [
+            "Claude-as-judge needs an API key",
+            "Claude-as-judge has a cost",
+            "The project must be local and free",
+            "Deterministic evals require no key and have no cost",
+            "Faithfulness checks are a proxy for meaning",
+            "Catch missing or invented specifics, but not fluent, subtly wrong sentences"
+          ]
+        },
+        {
+          "q": "How do your deterministic evaluations work for retrieval, faithfulness, and correct refusal?",
+          "mustMention": [
+            "Retrieval evaluation",
+            "Faithfulness evaluation",
+            "Correct refusal evaluation",
+            "Deterministic approach makes them repeatable",
+            "Implementation evidence in src/evals/score.ts, src/evals/report.ts, src/evals/run.ts"
+          ]
+        },
+        {
+          "q": "You catch missing or invented facts deterministically, but not subtle meaning errors—what types of errors are you living with?",
+          "mustMention": [
+            "Faithfulness checks catch missing or invented specifics",
+            "Don't catch fluent, subtly wrong sentences",
+            "Faithfulness is a proxy for meaning, not a true measure",
+            "Subtle meaning errors slip through"
+          ]
+        }
+      ]
+    }
+  }
+}
