@@ -1,33 +1,33 @@
 <!-- GENERATED from the decision ledger and the project docs by `genesis manual`. Do not edit by hand. -->
-<!-- manual-digest: 3dec959989df6bcf -->
+<!-- manual-digest: 78280a083d3fb61b -->
 
 # Manual: pos-support-agent
 
 ## En 30 segundos
-- Es un chat de soporte para comercios con un sistema de punto de venta (POS). Responde preguntas usando solo tres artículos de ayuda; si no sabe, lo dice y sugiere contactar a soporte. _(fuente: `README.md`)_
+- Es un chat de soporte para comerciantes de un sistema POS (punto de venta). Responde solo con tres artículos de ayuda; si no cubren la pregunta, lo dice y sugiere contactar a soporte. _(fuente: `README.md`)_
 - Es una demo: los artículos son sintéticos, no se conecta a un POS real, no tiene login ni guarda historial, y corre solo en localhost. _(fuente: `README.md`)_
 
 ## Para qué existe
-- Muestra RAG (retrieval-augmented generation: buscar texto relevante y dar ese texto al modelo para responder) y evals (pruebas repetibles de calidad) reales, en una laptop, sin claves ni costo. _(fuente: `README.md`)_
-- Está pensado para comerciantes que usan un sistema POS y preguntan cosas como reembolsos parciales. _(fuente: `README.md`)_
+- El objetivo no es la ventana de chat, sino mostrar RAG (retrieval-augmented generation: buscar texto relevante y responder con él) real y evals (pruebas de calidad) repetibles, en una laptop, sin claves ni costo. _(fuente: `README.md`)_
+- Está pensado para comerciantes que preguntan cosas como reembolsos parciales, y para quien quiera clonar el proyecto y correr las evals sin cuenta. _(fuente: `README.md`)_
 
 ## Cómo funciona
 - La pregunta se convierte en embedding (lista de números que representa el significado) localmente y se buscan las secciones más cercanas de los artículos. _(fuente: `README.md`)_
-- Si la mejor coincidencia es muy débil, el código rechaza sin llamar al modelo. Si no, un modelo local de Ollama redacta la respuesta solo con esas secciones. _(fuente: `README.md`)_
-- Si el modelo responde NOT_IN_DOCS (señal de que no está en los documentos), también se rechaza; si no, se da la respuesta con su fuente. _(fuente: `README.md`)_
-- Los embeddings usan Xenova/all-MiniLM-L6-v2 con transformers.js y las respuestas llama3.2:3b en Ollama, ambos en tu máquina. _(fuente: `README.md`)_
+- Si la mejor coincidencia es débil, el código rechaza sin llamar al modelo. Si no, un modelo local escribe la respuesta solo con esas secciones. _(fuente: `README.md`)_
+- Si el modelo responde NOT_IN_DOCS (señal de que no hay respuesta en los documentos), también se rechaza. Si no, se da la respuesta con la fuente citada. _(fuente: `README.md`)_
+- Los embeddings usan Xenova/all-MiniLM-L6-v2 y las respuestas un modelo de Ollama (llama3.2:3b por defecto), ambos en tu máquina. _(fuente: `README.md`)_
 
 ## Cómo se usa
-- Requiere Node.js 20 o más, Ollama en ejecución y unos 2 GB de disco. Hace falta internet una sola vez para bajar el modelo de embeddings. _(fuente: `README.md`)_
-- Instala con npm install y ollama pull llama3.2:3b. Luego npm run ingest crea el índice (data/index.json). _(fuente: `README.md`)_
-- Inicia el chat con npm run dev y ábrelo en http://localhost:3000. También puedes preguntar desde terminal con npx tsx src/agent/try.ts. _(fuente: `README.md`)_
-- La configuración va en variables de entorno (por ejemplo PORT=4000 npm run dev); el proyecto no lee un archivo .env por sí mismo. _(fuente: `README.md`)_
+- Requisitos: Node.js 20 o más, Ollama funcionando, unos 2 GB de disco e internet una sola vez para bajar el modelo de embeddings (~23 MB). _(fuente: `README.md`)_
+- Instalación: npm install, ollama pull llama3.2:3b, y npm run ingest (descarga y verifica el modelo de embeddings y crea data/index.json). _(fuente: `README.md`)_
+- Para usarlo, ejecuta npm run dev y abre el chat en http://localhost:3000. Puedes cambiar el puerto con PORT, por ejemplo PORT=4000 npm run dev. _(fuente: `README.md`)_
+- La configuración se lee de variables de entorno (OLLAMA_MODEL, REFUSAL_THRESHOLD, TOP_K, PORT); el proyecto no carga un archivo .env por sí mismo. _(fuente: `README.md`)_
 
 ## Qué NO hace (límites)
-- Es de un solo turno y solo en inglés: cada pregunta es independiente y no hay memoria entre preguntas. _(fuente: `README.md`)_
-- Solo busca en tres artículos; nada más se consulta. El índice tiene solo 10 secciones. _(fuente: `README.md`)_
-- El modelo no tiene herramientas ni puede tomar acciones; lo peor que una pregunta hostil logra es una respuesta errónea o rechazada. _(fuente: `README.md`)_
-- La faithfulness (fidelidad a las fuentes) es solo un proxy: una frase fluida pero sutilmente incorrecta, sin números nuevos, pasaría. _(fuente: `README.md`)_
+- Es de un solo turno y solo en inglés: cada pregunta es independiente, sin memoria entre preguntas. _(fuente: `README.md`)_
+- Solo busca en tres artículos; nada más se consulta. _(fuente: `README.md`)_
+- El modelo no tiene herramientas ni puede tomar acciones; lo peor que puede pasar con una pregunta hostil es una respuesta errónea o rechazada. _(fuente: `README.md`)_
+- Los números son una demostración: 23 preguntas, mismo autor para preguntas y artículos, y la faithfulness (fidelidad a las fuentes) es solo un proxy que no entiende el significado. _(fuente: `README.md`)_
 
 ## Por qué se construyó así
 - **Switch default generation model from llama3.1:8b to llama3.2:3b after measuring on 8 GB RAM:** The 8B model took 51 s to load and 13.4 s to generate 2 tokens, which would blow the 60 s Ollama timeout so no real answer could work. The 3B loaded in about 7 s and generated at about 25 tokens/s. It was a measured performance failure, not a preference. _(fuente: `src/config.ts`, `.env.example`)_
@@ -101,16 +101,17 @@ flowchart LR
 ```
 
 ## Cómo saber si está roto
-- npm run verify hace typecheck, lint, tests unitarios, eval:fast y build, sin necesitar Ollama. npm test corre además el eval completo. _(fuente: `README.md`)_
-- npm test falla si una categoría no llega a su mínimo o no pudo puntuarse por completo; nunca inventa un número y marca SKIPPED. _(fuente: `README.md`)_
-- Si no alcanza a Ollama: ejecuta ollama serve. Si falta el modelo: ollama pull. Si falta o no coincide el índice: npm run ingest. _(fuente: `README.md`)_
-- Si el puerto 3000 está ocupado, cambia PORT. La primera respuesta tras una pausa tarda 15 a 30 s porque Ollama recarga el modelo. _(fuente: `README.md`)_
+- npm run verify hace typecheck, lint, tests unitarios, eval:fast y build, sin necesitar Ollama. npm test corre además la eval completa y sí necesita Ollama. _(fuente: `README.md`)_
+- npm test falla si una categoría no llega a su mínimo o no pudo puntuarse completa; nunca inventa un número: lo no ejecutado dice SKIPPED. _(fuente: `README.md`)_
+- Si no alcanza Ollama, ejecuta ollama serve o abre la app de Ollama. Si falta el modelo, ollama pull llama3.2:3b. _(fuente: `README.md`)_
+- Si el índice no se encuentra o su hash no coincide, corre npm run ingest. Si el puerto 3000 está ocupado, cambia PORT. _(fuente: `README.md`)_
+- La primera respuesta tras una pausa tarda 15 a 30 segundos porque Ollama recarga el modelo. _(fuente: `README.md`)_
 
 ## Datos y secretos
-- No guarda historial y el texto de las preguntas nunca se escribe en los logs. _(fuente: `README.md`)_
-- Solo contacta huggingface.co, una vez, para bajar el modelo de embeddings; sus archivos se verifican con hashes SHA-256 fijados. _(fuente: `README.md`)_
-- El servidor escucha solo en 127.0.0.1, acepta una pregunta (máx. 500 caracteres) y no envía cabeceras CORS, para que otros sitios no lo usen. _(fuente: `README.md`)_
-- No requiere claves API ni cuentas. _(fuente: `README.md`)_
+- Los datos son solo los tres artículos de docs/kb/ y el índice generado en data/index.json. No se guarda historial. _(fuente: `README.md`)_
+- El texto de las preguntas nunca se escribe en los logs. _(fuente: `README.md`)_
+- Lo único externo que se contacta es huggingface.co, una vez, para bajar el modelo de embeddings, cuyos archivos se verifican con hashes SHA-256 fijos. _(fuente: `README.md`)_
+- No requiere claves ni cuentas. El servidor escucha solo en 127.0.0.1 y rechaza otros Host, evitando uso desde otros sitios web. _(fuente: `README.md`)_
 
 ## Qué cambiaría al crecer
 - A JSON file with 10 chunks works for a demo; thousands of articles need an actual vector database, and retrieval tuning becomes its own project at that size. _(DEC-pos-support-chat-agent-with-rag-and-eval-05)_
@@ -118,6 +119,7 @@ flowchart LR
 - With 23 questions one question moves a percentage by 4 points (25 for a held-out one), so the numbers are a demonstration, not a general accuracy claim. _(DEC-pos-support-chat-agent-with-rag-and-eval-14)_
 
 ## Medida de éxito
-- Se mide con 23 preguntas de oro (golden set), 6 reservadas (held out, no usadas para ajustar), con chequeos de texto deterministas, sin juez de IA. _(fuente: `README.md`)_
-- Mínimos: 90% retrieval (encontrar la sección correcta), 85% faithfulness y 95% correct refusal (rechazo correcto). Cada uno permite una pregunta de margen. _(fuente: `README.md`)_
-- Resultado medido: retrieval 15/15, faithfulness 14/15 (93%), correct refusal 23/23. Es una demostración, no una afirmación general de precisión. _(fuente: `README.md`)_
+- La golden set (conjunto de preguntas de referencia) tiene 23 preguntas: 8 directas, 7 paráfrasis, 6 trampas cercanas y 2 inyecciones de prompt; 6 están reservadas (held-out). _(fuente: `README.md`)_
+- Se miden tres categorías con chequeos de texto deterministas, sin juez de IA: retrieval, faithfulness y correct refusal. _(fuente: `README.md`)_
+- Mínimos de aprobación: 90% retrieval, 85% faithfulness y 95% correct refusal, con margen de una pregunta. _(fuente: `README.md`)_
+- Resultado de una corrida: retrieval 15/15, faithfulness 14/15 (93%), correct refusal 23/23. El único fallo omitió que pedidos viejos van a soporte general. _(fuente: `README.md`)_

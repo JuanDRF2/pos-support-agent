@@ -3,14 +3,14 @@
   "sources": [
     "README.md"
   ],
-  "sourcesHash": "050d78c6cbf74ad8",
+  "sourcesHash": "120701690d243e89",
   "extract": {
     "sections": [
       {
         "id": "resumen",
         "items": [
           {
-            "text": "Es un chat de soporte para comercios con un sistema de punto de venta (POS). Responde preguntas usando solo tres artículos de ayuda; si no sabe, lo dice y sugiere contactar a soporte.",
+            "text": "Es un chat de soporte para comerciantes de un sistema POS (punto de venta). Responde solo con tres artículos de ayuda; si no cubren la pregunta, lo dice y sugiere contactar a soporte.",
             "quote": {
               "file": "README.md",
               "text": "it answers **from those articles only**"
@@ -20,7 +20,7 @@
             "text": "Es una demo: los artículos son sintéticos, no se conecta a un POS real, no tiene login ni guarda historial, y corre solo en localhost.",
             "quote": {
               "file": "README.md",
-              "text": "This is a demo.** The three help articles are synthetic"
+              "text": "**This is a demo.** The three help articles are synthetic"
             }
           }
         ]
@@ -29,17 +29,17 @@
         "id": "proposito",
         "items": [
           {
-            "text": "Muestra RAG (retrieval-augmented generation: buscar texto relevante y dar ese texto al modelo para responder) y evals (pruebas repetibles de calidad) reales, en una laptop, sin claves ni costo.",
+            "text": "El objetivo no es la ventana de chat, sino mostrar RAG (retrieval-augmented generation: buscar texto relevante y responder con él) real y evals (pruebas de calidad) repetibles, en una laptop, sin claves ni costo.",
             "quote": {
               "file": "README.md",
               "text": "It is to show **real retrieval (RAG) and real, repeatable evals**"
             }
           },
           {
-            "text": "Está pensado para comerciantes que usan un sistema POS y preguntan cosas como reembolsos parciales.",
+            "text": "Está pensado para comerciantes que preguntan cosas como reembolsos parciales, y para quien quiera clonar el proyecto y correr las evals sin cuenta.",
             "quote": {
               "file": "README.md",
-              "text": "A small support chat for merchants of a point-of-sale system."
+              "text": "anyone can clone it and run the evals without an account"
             }
           }
         ]
@@ -55,21 +55,21 @@
             }
           },
           {
-            "text": "Si la mejor coincidencia es muy débil, el código rechaza sin llamar al modelo. Si no, un modelo local de Ollama redacta la respuesta solo con esas secciones.",
+            "text": "Si la mejor coincidencia es débil, el código rechaza sin llamar al modelo. Si no, un modelo local escribe la respuesta solo con esas secciones.",
             "quote": {
               "file": "README.md",
               "text": "best match too weak?"
             }
           },
           {
-            "text": "Si el modelo responde NOT_IN_DOCS (señal de que no está en los documentos), también se rechaza; si no, se da la respuesta con su fuente.",
+            "text": "Si el modelo responde NOT_IN_DOCS (señal de que no hay respuesta en los documentos), también se rechaza. Si no, se da la respuesta con la fuente citada.",
             "quote": {
               "file": "README.md",
               "text": "model says NOT_IN_DOCS?"
             }
           },
           {
-            "text": "Los embeddings usan Xenova/all-MiniLM-L6-v2 con transformers.js y las respuestas llama3.2:3b en Ollama, ambos en tu máquina.",
+            "text": "Los embeddings usan Xenova/all-MiniLM-L6-v2 y las respuestas un modelo de Ollama (llama3.2:3b por defecto), ambos en tu máquina.",
             "quote": {
               "file": "README.md",
               "text": "`Xenova/all-MiniLM-L6-v2` through transformers.js, on your machine."
@@ -81,28 +81,28 @@
         "id": "uso",
         "items": [
           {
-            "text": "Requiere Node.js 20 o más, Ollama en ejecución y unos 2 GB de disco. Hace falta internet una sola vez para bajar el modelo de embeddings.",
+            "text": "Requisitos: Node.js 20 o más, Ollama funcionando, unos 2 GB de disco e internet una sola vez para bajar el modelo de embeddings (~23 MB).",
             "quote": {
               "file": "README.md",
               "text": "Node.js 20 or newer (developed on 24)."
             }
           },
           {
-            "text": "Instala con npm install y ollama pull llama3.2:3b. Luego npm run ingest crea el índice (data/index.json).",
+            "text": "Instalación: npm install, ollama pull llama3.2:3b, y npm run ingest (descarga y verifica el modelo de embeddings y crea data/index.json).",
             "quote": {
               "file": "README.md",
-              "text": "npm run ingest              # downloads the embedding model once"
+              "text": "npm run ingest              # downloads the embedding model once, verifies it, builds data/index.json"
             }
           },
           {
-            "text": "Inicia el chat con npm run dev y ábrelo en http://localhost:3000. También puedes preguntar desde terminal con npx tsx src/agent/try.ts.",
+            "text": "Para usarlo, ejecuta npm run dev y abre el chat en http://localhost:3000. Puedes cambiar el puerto con PORT, por ejemplo PORT=4000 npm run dev.",
             "quote": {
               "file": "README.md",
               "text": "npm run dev                 # starts the chat at http://localhost:3000"
             }
           },
           {
-            "text": "La configuración va en variables de entorno (por ejemplo PORT=4000 npm run dev); el proyecto no lee un archivo .env por sí mismo.",
+            "text": "La configuración se lee de variables de entorno (OLLAMA_MODEL, REFUSAL_THRESHOLD, TOP_K, PORT); el proyecto no carga un archivo .env por sí mismo.",
             "quote": {
               "file": "README.md",
               "text": "the project does not load a `.env` file by itself"
@@ -114,28 +114,28 @@
         "id": "limites",
         "items": [
           {
-            "text": "Es de un solo turno y solo en inglés: cada pregunta es independiente y no hay memoria entre preguntas.",
+            "text": "Es de un solo turno y solo en inglés: cada pregunta es independiente, sin memoria entre preguntas.",
             "quote": {
               "file": "README.md",
               "text": "**Single turn, English only.**"
             }
           },
           {
-            "text": "Solo busca en tres artículos; nada más se consulta. El índice tiene solo 10 secciones.",
+            "text": "Solo busca en tres artículos; nada más se consulta.",
             "quote": {
               "file": "README.md",
               "text": "Nothing else is searched."
             }
           },
           {
-            "text": "El modelo no tiene herramientas ni puede tomar acciones; lo peor que una pregunta hostil logra es una respuesta errónea o rechazada.",
+            "text": "El modelo no tiene herramientas ni puede tomar acciones; lo peor que puede pasar con una pregunta hostil es una respuesta errónea o rechazada.",
             "quote": {
               "file": "README.md",
               "text": "The chat model has no tools and cannot take actions"
             }
           },
           {
-            "text": "La faithfulness (fidelidad a las fuentes) es solo un proxy: una frase fluida pero sutilmente incorrecta, sin números nuevos, pasaría.",
+            "text": "Los números son una demostración: 23 preguntas, mismo autor para preguntas y artículos, y la faithfulness (fidelidad a las fuentes) es solo un proxy que no entiende el significado.",
             "quote": {
               "file": "README.md",
               "text": "Faithfulness is a proxy."
@@ -147,28 +147,35 @@
         "id": "roto",
         "items": [
           {
-            "text": "npm run verify hace typecheck, lint, tests unitarios, eval:fast y build, sin necesitar Ollama. npm test corre además el eval completo.",
+            "text": "npm run verify hace typecheck, lint, tests unitarios, eval:fast y build, sin necesitar Ollama. npm test corre además la eval completa y sí necesita Ollama.",
             "quote": {
               "file": "README.md",
               "text": "typecheck + lint + unit tests + `eval:fast` + build"
             }
           },
           {
-            "text": "npm test falla si una categoría no llega a su mínimo o no pudo puntuarse por completo; nunca inventa un número y marca SKIPPED.",
+            "text": "npm test falla si una categoría no llega a su mínimo o no pudo puntuarse completa; nunca inventa un número: lo no ejecutado dice SKIPPED.",
             "quote": {
               "file": "README.md",
               "text": "It never prints a made-up number"
             }
           },
           {
-            "text": "Si no alcanza a Ollama: ejecuta ollama serve. Si falta el modelo: ollama pull. Si falta o no coincide el índice: npm run ingest.",
+            "text": "Si no alcanza Ollama, ejecuta ollama serve o abre la app de Ollama. Si falta el modelo, ollama pull llama3.2:3b.",
             "quote": {
               "file": "README.md",
               "text": "start it with `ollama serve` or open the Ollama app."
             }
           },
           {
-            "text": "Si el puerto 3000 está ocupado, cambia PORT. La primera respuesta tras una pausa tarda 15 a 30 s porque Ollama recarga el modelo.",
+            "text": "Si el índice no se encuentra o su hash no coincide, corre npm run ingest. Si el puerto 3000 está ocupado, cambia PORT.",
+            "quote": {
+              "file": "README.md",
+              "text": "run `npm run ingest`."
+            }
+          },
+          {
+            "text": "La primera respuesta tras una pausa tarda 15 a 30 segundos porque Ollama recarga el modelo.",
             "quote": {
               "file": "README.md",
               "text": "Ollama is reloading the model; later answers are faster."
@@ -180,31 +187,31 @@
         "id": "datos",
         "items": [
           {
-            "text": "No guarda historial y el texto de las preguntas nunca se escribe en los logs.",
+            "text": "Los datos son solo los tres artículos de docs/kb/ y el índice generado en data/index.json. No se guarda historial.",
+            "quote": {
+              "file": "README.md",
+              "text": "stores no history"
+            }
+          },
+          {
+            "text": "El texto de las preguntas nunca se escribe en los logs.",
             "quote": {
               "file": "README.md",
               "text": "Question text is never written to the logs."
             }
           },
           {
-            "text": "Solo contacta huggingface.co, una vez, para bajar el modelo de embeddings; sus archivos se verifican con hashes SHA-256 fijados.",
+            "text": "Lo único externo que se contacta es huggingface.co, una vez, para bajar el modelo de embeddings, cuyos archivos se verifican con hashes SHA-256 fijos.",
             "quote": {
               "file": "README.md",
               "text": "The only address this project ever contacts outside your machine is `huggingface.co`"
             }
           },
           {
-            "text": "El servidor escucha solo en 127.0.0.1, acepta una pregunta (máx. 500 caracteres) y no envía cabeceras CORS, para que otros sitios no lo usen.",
+            "text": "No requiere claves ni cuentas. El servidor escucha solo en 127.0.0.1 y rechaza otros Host, evitando uso desde otros sitios web.",
             "quote": {
               "file": "README.md",
               "text": "The server listens on `127.0.0.1` only"
-            }
-          },
-          {
-            "text": "No requiere claves API ni cuentas.",
-            "quote": {
-              "file": "README.md",
-              "text": "no API keys, no accounts and no cost"
             }
           }
         ]
@@ -213,24 +220,31 @@
         "id": "exito",
         "items": [
           {
-            "text": "Se mide con 23 preguntas de oro (golden set), 6 reservadas (held out, no usadas para ajustar), con chequeos de texto deterministas, sin juez de IA.",
+            "text": "La golden set (conjunto de preguntas de referencia) tiene 23 preguntas: 8 directas, 7 paráfrasis, 6 trampas cercanas y 2 inyecciones de prompt; 6 están reservadas (held-out).",
+            "quote": {
+              "file": "README.md",
+              "text": "Six of the 23 are **held out**"
+            }
+          },
+          {
+            "text": "Se miden tres categorías con chequeos de texto deterministas, sin juez de IA: retrieval, faithfulness y correct refusal.",
             "quote": {
               "file": "README.md",
               "text": "There is no AI judge."
             }
           },
           {
-            "text": "Mínimos: 90% retrieval (encontrar la sección correcta), 85% faithfulness y 95% correct refusal (rechazo correcto). Cada uno permite una pregunta de margen.",
+            "text": "Mínimos de aprobación: 90% retrieval, 85% faithfulness y 95% correct refusal, con margen de una pregunta.",
             "quote": {
               "file": "README.md",
               "text": "Pass marks are 90% (retrieval), 85% (faithfulness) and 95% (correct refusal)."
             }
           },
           {
-            "text": "Resultado medido: retrieval 15/15, faithfulness 14/15 (93%), correct refusal 23/23. Es una demostración, no una afirmación general de precisión.",
+            "text": "Resultado de una corrida: retrieval 15/15, faithfulness 14/15 (93%), correct refusal 23/23. El único fallo omitió que pedidos viejos van a soporte general.",
             "quote": {
               "file": "README.md",
-              "text": "Faithfulness     scored                   14/15 93%"
+              "text": "Faithfulness      scored                   14/15 93%"
             }
           }
         ]
