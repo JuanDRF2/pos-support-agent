@@ -1,0 +1,23 @@
+name: check
+# Deterministic checks only: no model is called and no paid or keyed API is used. The full eval (`npm test`) needs a
+# local Ollama and the cached embedding model, so it runs on a developer machine, not here.
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
+      - name: Unit tests (chunker, scorers, server rules, config, ...)
+        run: npm run test:unit

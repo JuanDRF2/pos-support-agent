@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "A merchant-facing POS support chat agent with real RAG retrieval and a demonstrable, deterministic eval suite — TypeScript/Node, fully local: transformers.js embeddings and Ollama generation, no hosted or keyed APIs.",
+  "description": "A merchant-facing POS support chat assistant with real RAG retrieval and a demonstrable, deterministic eval suite — TypeScript/Node, fully local: transformers.js embeddings and Ollama generation, no hosted or keyed APIs.",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsx src/index.ts",
