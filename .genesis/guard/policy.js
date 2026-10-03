@@ -400,11 +400,101 @@ function isForcePushToProtected(cmd) {
   // `git checkout main`) belongs to another command and says nothing about this push.
   return cmd.split(/&&|\|\||[;|\n]/).some((seg) => {
     if (!GIT_PUSH.test(seg)) return false
-    const forced = /(--force\b|--force-with-lease\b|(?:^|\s)-f\b)/i.test(seg) || /\s\+[\w/-]*\b(main|master)\b/i.test(seg)
+    const forced = /(--force\b|--force-with-lease\b|(?:^|\s)-f\b)/i.test(seg) || /\s\+\S*\b(main|master)\b/i.test(seg)
     // Deleting a protected branch on the remote rewrites shared history just as a force does.
     const deletes = /(?:^|\s)(--delete|-d)(?=\s)/i.test(seg) || /\s:(main|master)\b/i.test(seg)
     return (forced || deletes) && /\b(main|master)\b/i.test(seg)
   })
+}
+
+/**
+ * What a `git push` command line would send, read from its text: the remote, each refspec (a leading
+ * `+` forces it), and the flags that widen it. Pure. `null` when the line has no push.
+ * @param {string} cmd
+ * @returns {{remote: string, refspecs: {force: boolean, src: string, dst: string}[], mirror: boolean, all: boolean, tags: boolean, force: boolean}|null}
+ */
+export function parsePush(cmd) {
+  const seg = String(cmd || '')
+    .split(/&&|\|\||[;|\n]/)
+    .find((s) => GIT_PUSH.test(s))
+  if (!seg) return null
+  const tokens = seg.trim().split(/\s+/).map((t) => t.replace(/^["']|["']$/g, ''))
+  const at = tokens.findIndex((t) => t === 'push')
+  const args = tokens.slice(at + 1)
+  const out = { remote: '', refspecs: [], mirror: false, all: false, tags: false, force: false }
+  const positional = []
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i]
+    if (a === '--mirror') out.mirror = true
+    else if (a === '--all' || a === '--branches') out.all = true
+    else if (a === '--tags') out.tags = true
+    else if (a === '--force' || a === '-f' || a.startsWith('--force-with-lease')) out.force = true
+    else if (a === '-o' || a === '--push-option' || a === '--repo' || a === '--receive-pack' || a === '--exec') i++
+    else if (a.startsWith('-')) continue
+    else positional.push(a)
+  }
+  out.remote = positional[0] ?? ''
+  for (const spec of positional.slice(1)) {
+    const force = spec.startsWith('+')
+    const body = force ? spec.slice(1) : spec
+    const colon = body.indexOf(':')
+    out.refspecs.push({ force, src: colon === -1 ? body : body.slice(0, colon), dst: colon === -1 ? body : body.slice(colon + 1) })
+  }
+  return out
+}
+
+/**
+ * Files whose contents are credentials: `.env` and `.env.<anything but example/sample/template/dist>`
+ * at any depth, and Genesis's seal key. Matched as a whole path component, so `process.env.X` and
+ * `.envrc` are not it.
+ */
+const SECRET_FILE = /(?:^|[\s"'=@<(/:])(?:[\w.~${}-]*\/)*(?:\.env(?:\.(?!(?:example|sample|template|dist)\b)[\w.-]+)?|seal\.key)(?=$|[\s"';|&)<>`])/i
+
+/** A glob that can expand to `.env` or `.env.local` (`.e*`, `.en?`, `.env*`). A bare `.*` is not matched: it is everywhere in grep/jq patterns. */
+const SECRET_GLOB = /(?:^|[\s"'=@<(/:])(?:[\w.~${}-]*\/)*\.(?:e|en|env)[*?[]/
+
+/** Programs that put a file's contents somewhere the agent (or the network) can read them. */
+const READS_FILES =
+  /(?:^|[\s;&|(`$])(?:cat|bat|batcat|less|more|most|head|tail|nl|tac|rev|paste|fold|cut|sort|uniq|tee|grep|egrep|fgrep|rg|ag|ack|awk|gawk|sed|jq|yq|xxd|od|hexdump|strings|base64|openssl|cp|scp|rsync|install|curl|wget|xh|source|nano|vi|vim|nvim|emacs|code|cursor|open|xargs|dd|tar|zip|gzip|zcat|diff|cmp|comm|python[\d.]*|node|deno|bun|ruby|perl|php|lua|osascript|export)(?=\s|$)|(?:^|[\s;&|(])\.\s|\bgit\s+(?:-\S+\s+\S+\s+)*(?:diff|show|blame|grep|cat-file|log)\b/i
+
+/**
+ * Heredoc bodies that are prose (a commit message, a README being written) are dropped; one fed to
+ * an interpreter or a shell is the program, and stays.
+ * @param {string} cmd
+ */
+function keepProgramHeredocs(cmd) {
+  return cmd.replace(/^([^\n]*)<<-?\s*(['"]?)([A-Za-z_][\w-]*)\2([^\n]*)\r?\n([\s\S]*?)\r?\n[ \t]*\3(?=\s|$)/gm, (whole, head, _q, delim, tail) =>
+    /\b(python[\d.]*|node|deno|bun|ruby|perl|php|lua|bash|sh|zsh|osascript)\b/i.test(head) && !/\bcat\b/.test(head) ? whole : `${head}<<${delim}${tail}\n${delim}`,
+  )
+}
+
+/**
+ * Does this command read a credentials file (`.env*`, `~/.genesis/seal.key`)? Its contents would
+ * land in the conversation or on the network. Judged per segment so `git add .env` or
+ * `echo .env >> .gitignore` (no reader) pass; the file name inside a program's source counts.
+ * @param {string} cmd
+ * @returns {string|null}
+ */
+function readsSecretFile(cmd) {
+  const base = blankMessageValues(keepProgramHeredocs(cmd))
+  // The shell would see `.en""v` as `.env` and `f=.env; cat "$f"` as `cat .env`; read what it reads.
+  const unquoted = base.replace(/(["'])\1/g, '')
+  const vars = new Map()
+  for (const m of unquoted.matchAll(/(?:^|[\s;&|])([A-Za-z_]\w*)=(["']?)([^\s"';&|]+)\2/g)) vars.set(m[1], m[3])
+  const text = vars.size ? unquoted.replace(/\$\{?([A-Za-z_]\w*)\}?/g, (whole, name) => vars.get(name) ?? whole) : unquoted
+  if (!SECRET_FILE.test(text) && !SECRET_GLOB.test(text)) return null
+  const MSG = 'reads a credentials file (.env* or the seal key): its contents would enter the conversation. Ask the person to run it, or to tell you which variable names you need'
+  // A heredoc fed to an interpreter is a program: naming the file anywhere in it is reading it.
+  for (const m of text.matchAll(/^[^\n]*\b(?:python[\d.]*|node|deno|bun|ruby|perl|php|lua|osascript)\b[^\n]*<<-?\s*(['"]?)([A-Za-z_][\w-]*)\1[^\n]*\r?\n([\s\S]*?)\r?\n[ \t]*\2(?=\s|$)/gm)) {
+    if (SECRET_FILE.test(m[3])) return MSG
+  }
+  for (const seg of segments(text)) {
+    if (!SECRET_FILE.test(seg) && !SECRET_GLOB.test(seg)) continue
+    if (/<\s*["']?(?:[\w.~${}-]*\/)*(?:\.env|[^\s]*seal\.key)/i.test(seg) || READS_FILES.test(seg)) {
+      return MSG
+    }
+  }
+  return null
 }
 
 /**
@@ -419,6 +509,12 @@ function askReason(cmd) {
   // when it is given no script at all. `| python3 -c "..."` parses the download, it does not run it.
   if (/\b(curl|wget|xh)\b[^\n]*\|\s*(?:sudo\s+)?(?:(?:ba|z|da|k)?sh\b|(?:python[\d.]*|node|perl|ruby)\s*(?:$|[;&|)\n]|-\s*(?:$|[;&|)\n])))/i.test(cmd)) {
     return 'pipes a download straight into a shell or interpreter: it runs code nobody has read'
+  }
+  if (/\bfind\b[^\n;&|]*\s(?:-delete\b|-exec(?:dir)?\s+(?:\S*\/)?rm\b)/i.test(cmd)) {
+    return 'find with -delete (or -exec rm) deletes everything it matches, and the match is easy to get wrong'
+  }
+  if (segments(cmd).some((seg) => /^(?:(?:\$\{?[A-Za-z_]\w*\}?|"\$\{?[A-Za-z_]\w*\}?"|'\$[A-Za-z_]\w*')(?=\s|$)|\$\(|`)/.test(seg.replace(PREFIX, '')))) {
+    return 'the command to run is held in a variable (or built by a substitution), so what it does cannot be read'
   }
   if (new RegExp(String.raw`\bgit${GIT_GLOBALS}\s+reset\b[^\n;&|]*--hard\b`, 'i').test(cmd)) {
     return 'git reset --hard discards uncommitted work'
@@ -441,6 +537,7 @@ function destructiveReason(cmd) {
   if (isDangerousRmRf(cmd)) return 'recursive force-delete of a dangerous path (rm -rf)'
   if (/\bdrop\s+(table|database|schema)\b/i.test(cmd)) return 'DROP is irreversible'
   if (isForcePushToProtected(cmd)) return 'force-push to a protected branch rewrites shared history'
+  if (parsePush(cmd)?.mirror) return 'git push --mirror overwrites and deletes every ref on the remote, and sends everything in the repository'
   if (/\bmkfs(\.\w+)?\b/i.test(cmd)) return 'mkfs formats a filesystem'
   if (/\bdd\b[^|&;]*\bof=\/dev\/[a-z]/i.test(cmd)) return 'dd to a device overwrites a disk'
   if (/:\s*\(\s*\)\s*\{[^}]*\|[^}]*\}\s*;/.test(cmd)) return 'fork bomb'
@@ -599,6 +696,11 @@ export function decide(payload) {
   const rawCommand = commandText(payload?.tool_input)
   if (!rawCommand.trim()) return { action: 'allow', reason: 'empty command' }
   const command = stripInlineInterpreterSource(stripHeredocBodies(rawCommand))
+
+  // 0. A credentials file read through the shell: refused in every mode. Looked at on the raw
+  //    line, because the inline source below is exactly where `open('.env')` would hide.
+  const secretRead = readsSecretFile(rawCommand)
+  if (secretRead) return { action: 'block', reason: secretRead }
 
   // 1. Unambiguously destructive → block, regardless of environment.
   const destructive = destructiveReason(command)
