@@ -25,7 +25,7 @@ what you were handed. Your job:
    build can match that look.
 2. Check it against the architecture/infrastructure checklist (AGENTS.md, "When this
    stopped being Lane A"): if the solution direction needs a new database, new auth,
-   two of the organization's existing systems talking for the first time, or new cloud infrastructure — don't
+   two existing systems talking for the first time, or new cloud infrastructure — don't
    propose a structure. Say explicitly "this is Lane B" and which signal triggered it.
 3. Check the proposed structure against the security checklist (AGENTS.md, "Security")
    so the design itself doesn't violate any of those points (where env vars live, how

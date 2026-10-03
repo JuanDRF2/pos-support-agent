@@ -4,8 +4,8 @@
 //
 // Runs as `node .genesis/guard/check.js` with a Claude Code PreToolUse payload on
 // stdin. Maps the pure decision from policy.js to the hook contract:
-//   allow -> exit 0 + JSON (permissionDecision: "allow") so safe commands
-//            auto-approve without a prompt, even in acceptEdits mode
+//   allow -> exit 0, no output (Claude Code's own permission flow decides);
+//            with GENESIS_AUTONOMOUS=1, exit 0 + an explicit allow
 //   ask   -> exit 0 + JSON on stdout (permissionDecision: "ask")
 //   block -> exit 2 + reason on stderr
 import { readFileSync } from 'node:fs'
@@ -67,7 +67,12 @@ function main() {
   try {
     payload = JSON.parse(raw)
   } catch {
-    payload = {}
+    payload = undefined
+  }
+  // A call this hook cannot read is refused, not waved through as an empty command.
+  if (typeof payload !== 'object' || payload === null) {
+    process.stderr.write('Genesis Guard blocked this command: the tool call could not be read, so it cannot be judged.\n')
+    process.exit(2)
   }
 
   const decision = decide(payload)
@@ -102,9 +107,12 @@ function main() {
     process.exit(0)
   }
 
-  // allow — emit an explicit allow so Claude Code auto-approves the command
-  // instead of falling back to a permission prompt (the whole point of the
-  // guard governing auto mode: safe commands never stop the build loop).
+  // allow: the guard has no objection. It says NOTHING, so Claude Code's own permission flow decides
+  // (the allow-list in settings for routine commands, a question for anything else). Emitting
+  // `allow` here turned "ask unless allow-listed" into "allow unless flagged", which is the wrong
+  // default for people who cannot judge a command. Only the unattended loop, where someone chose
+  // to let it run without prompts, gets an explicit allow.
+  if (process.env.GENESIS_AUTONOMOUS !== '1') process.exit(0)
   process.stdout.write(
     JSON.stringify({
       hookSpecificOutput: {
@@ -112,10 +120,9 @@ function main() {
         permissionDecision: 'allow',
         permissionDecisionReason: decision.reason,
         // Codex rejects an `allow` that carries no `updatedInput` — it treats the decision as
-        // the "rewrite the tool's input" path and marks the hook Failed without it, which
-        // silently costs the fast-path this branch exists for. Echoing the input back is the
-        // no-op rewrite that satisfies both agents; `command` is the normalized string form,
-        // since an argv array is not the "string command field" Codex requires here.
+        // the "rewrite the tool's input" path and marks the hook Failed without it. Echoing the
+        // input back is the no-op rewrite that satisfies both agents; `command` is the normalized
+        // string form, since an argv array is not the "string command field" Codex requires here.
         updatedInput: { ...(payload?.tool_input ?? {}), command },
       },
     }),

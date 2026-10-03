@@ -12,8 +12,9 @@ context: |
 # spec deltas, and a verify-report.
 rules:
   gates:
-    - Two human approvals are required before any code — (1) the proposal, and
-      (2) design + spec + tasks. No code is written until both are approved.
+    - Two human approvals are required before any code: the `proposal` gate (what
+      and why) and the `implementation` gate (loop-contract, spec deltas, tasks).
+      No code is written until both are approved.
     - An initiative with UI needs a THIRD human approval: the `design` gate. The
       screens are produced against the configured design system (always its latest
       branch) and mirrored into changes/<id>/design/; nobody approves an

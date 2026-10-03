@@ -32,9 +32,10 @@
 // envelope in `tool_input.command` that can touch MANY files at once. Everything below
 // works on the SET of paths a call writes, so one patch cannot slip a src/ change in
 // beside a legitimate planning edit.
-import { readFileSync, existsSync, readdirSync } from 'node:fs'
+import { readFileSync, existsSync, readdirSync, realpathSync } from 'node:fs'
+import { createHmac, timingSafeEqual } from 'node:crypto'
 import { homedir } from 'node:os'
-import { resolve, relative, isAbsolute, join, basename } from 'node:path'
+import { resolve, relative, isAbsolute, join, basename, dirname } from 'node:path'
 
 function readStdin() {
   try {
@@ -45,10 +46,36 @@ function readStdin() {
 }
 
 /** Files derived from the ledger by `genesis how-it-works` — never hand-edited. */
-const GENERATED_DOCS = ['docs/HOW-IT-WORKS.md', 'docs/.how-it-works.cache.json', 'docs/cards-draft/.cache.json', 'docs/MANUAL.md', 'docs/.manual.cache.json']
+const GENERATED_DOCS = ['docs/HOW-IT-WORKS.md', 'docs/.how-it-works.cache.json', 'docs/cards-draft/.cache.json', 'docs/MANUAL.md', 'docs/.manual.cache.json', 'docs/.reading-signature.json']
 
 /**
- * True when `filePath` is inside `dir` (or is `dir` itself).
+ * One spelling for a path: symlinks resolved (on the deepest part that exists), lower-cased.
+ * macOS and Windows disks are case-insensitive, so `State.yaml` IS `state.yaml` there; comparing
+ * spellings let any other capitalisation walk past every name-based rule. Lower-casing on a
+ * case-sensitive disk can only over-block, never under-block.
+ * @param {string} p
+ */
+function canon(p) {
+  const abs = resolve(p)
+  const tail = []
+  let cur = abs
+  while (!existsSync(cur)) {
+    tail.unshift(basename(cur))
+    const up = dirname(cur)
+    if (up === cur) break
+    cur = up
+  }
+  let real = cur
+  try {
+    real = realpathSync(cur)
+  } catch {
+    /* keep the lexical path */
+  }
+  return join(real, ...tail).toLowerCase()
+}
+
+/**
+ * True when `filePath` is inside `dir` (or is `dir` itself), compared by canonical path.
  * @param {string} cwd
  * @param {string} dir
  * @param {string} filePath
@@ -56,8 +83,24 @@ const GENERATED_DOCS = ['docs/HOW-IT-WORKS.md', 'docs/.how-it-works.cache.json',
 function underDir(cwd, dir, filePath) {
   if (!filePath) return false
   const abs = isAbsolute(filePath) ? filePath : resolve(cwd, filePath)
-  const rel = relative(resolve(cwd, dir), abs)
+  const rel = relative(canon(resolve(cwd, dir)), canon(abs))
   return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel))
+}
+
+/**
+ * The project root: the nearest folder at or above `start` that Genesis owns. A hook that took
+ * the payload's cwd at face value was switched off by running from `src/`.
+ * @param {string|undefined} start
+ */
+function findRoot(start) {
+  if (!start || typeof start !== 'string') return null
+  let cur = resolve(start)
+  for (;;) {
+    if (isGenesisProject(cur)) return cur
+    const up = dirname(cur)
+    if (up === cur) return null
+    cur = up
+  }
 }
 
 /**
@@ -185,6 +228,11 @@ function shellWritePaths(command) {
     if (!p || /[$`*?]/.test(p)) unresolved = true
     else paths.push(p)
   }
+  /** A target we only act on when it is a literal path: `curl -o "$f"` is not blocked for being a variable. @param {string|undefined} t */
+  const takeLiteral = (t) => {
+    const p = t === undefined ? '' : unquote(t)
+    if (p && !/[$`*?]/.test(p)) paths.push(p)
+  }
   /** @param {string} t */
   const isOperator = (t) => /^[><|;&]+$/.test(t)
   /** Arguments of the command starting at `i`, up to the next operator. @param {number} i */
@@ -219,12 +267,42 @@ function shellWritePaths(command) {
         for (const a of argsFrom(i)) if (a.startsWith('of=')) take(a.slice(3))
         break
       }
-      case 'sed': {
-        // In-place edit: every non-flag argument after the script is a file it rewrites.
+      case 'sed':
+      case 'perl': {
+        // In-place edit (`-i`, `-Ei`, `-pi`, `--in-place`): every non-flag argument after the
+        // script is a file it rewrites.
         const args = argsFrom(i)
-        if (!args.some((a) => a === '-i' || a.startsWith('-i'))) break
+        if (!args.some((a) => /^-[A-Za-z]*i/.test(a) || a.startsWith('--in-place'))) break
         const positional = args.filter((a) => !a.startsWith('-'))
         for (const a of positional.slice(1)) take(a)
+        break
+      }
+      case 'truncate': {
+        for (const a of argsFrom(i)) if (!a.startsWith('-')) take(a)
+        break
+      }
+      case 'curl':
+      case 'wget': {
+        const args = argsFrom(i)
+        args.forEach((a, k) => {
+          if (['-o', '--output', '-O', '--output-document'].includes(a) && !(unquote(t) === 'curl' && a === '-O')) takeLiteral(args[k + 1])
+        })
+        break
+      }
+      case 'bash':
+      case 'sh':
+      case 'zsh':
+      case 'dash':
+      case 'ksh': {
+        // `bash -c "<command>"`: the inner string is a shell command like any other. Read it
+        // instead of treating the quoted run as an opaque word, which hid every redirect in it.
+        const args = argsFrom(i)
+        const k = args.findIndex((a) => /^-[A-Za-z]*c$/.test(a))
+        if (k >= 0 && args[k + 1] !== undefined) {
+          const inner = shellWritePaths(unquote(args[k + 1]))
+          paths.push(...inner.paths)
+          if (inner.unresolved) unresolved = true
+        }
         break
       }
       default:
@@ -241,34 +319,166 @@ function shellWritePaths(command) {
  * (the ledger, config, and well-architected docs under it stay ordinary always-writable
  * planning artifacts — only the two directories that ARE the guard/gate are singled out).
  */
-const GUARD_DIRS = ['.genesis/guard', '.genesis/hooks']
+const GUARD_DIRS = ['.genesis/guard', '.genesis/hooks', '.genesis/seals']
 const GUARD_FILES = ['.claude/settings.json', '.codex/hooks.json', '.codex/config.toml']
 
 /** @param {string} cwd @param {string} filePath */
 function isGuardPath(cwd, filePath) {
   if (GUARD_DIRS.some((d) => underDir(cwd, d, filePath))) return true
   const abs = isAbsolute(filePath) ? filePath : resolve(cwd, filePath)
-  return GUARD_FILES.some((f) => abs === resolve(cwd, f))
+  return GUARD_FILES.some((f) => canon(abs) === canon(resolve(cwd, f)))
 }
 
 /**
- * `rm`/`unlink` targets in a shell command. Used ONLY to catch deletion of the guard's own
- * files (see {@link isGuardPath}) — a write-path scan alone misses `rm`, since removing a
- * file is not writing one, but it disables the guard just as completely as overwriting it
- * would. Deliberately not fed into the general write-detection path above: making `rm`
- * count as "a code write" everywhere would be a much bigger behavior change than this hook
- * is asked to make, for files this narrow list doesn't need it to cover.
+ * Would deleting, moving or rewriting `filePath` take the guard with it? True for the guard's
+ * own files AND for any folder that contains them (`.genesis`, `.claude`, the project root):
+ * `rm -rf .genesis` disables enforcement as completely as overwriting the hook does.
+ * @param {string} cwd @param {string} filePath
+ */
+function coversGuard(cwd, filePath) {
+  if (isGuardPath(cwd, filePath)) return true
+  const abs = isAbsolute(filePath) ? filePath : resolve(cwd, filePath)
+  return [...GUARD_DIRS, ...GUARD_FILES].some((g) => {
+    const rel = relative(canon(abs), canon(resolve(cwd, g)))
+    return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel))
+  })
+}
+
+/**
+ * Files Genesis itself owns, as patterns over the raw command text — for the cases where the
+ * write is done by code the hook cannot parse (an interpreter one-liner, a patch file).
+ * Case-insensitive on purpose. The generated docs are not here: `git checkout -- docs/HOW-IT-WORKS.md`
+ * restores a committed version, which is not a hand edit; a direct write to them is still blocked.
+ */
+const PROTECTED_TEXT = [
+  /state\.yaml/i,
+  /decisions\.md/i,
+  /\.genesis[\\/](guard|hooks)\b/i,
+  /\.claude[\\/]settings\.json/i,
+  /\.codex[\\/](hooks\.json|config\.toml)/i,
+  /\.reading-signature\.json/i,
+  /\.checks\b/i,
+]
+/** @param {string} text */
+const mentionsProtected = (text) => PROTECTED_TEXT.some((re) => re.test(text))
+
+/**
+ * Does this program source WRITE to a file Genesis owns? Looks at the arguments of the file
+ * operations (`open(p, 'w')`, `writeFileSync(p, ...)`, `Path(p).write_text(...)`, `unlink(p)`),
+ * not at every word: a script that writes a test which merely MENTIONS `state.yaml` is not
+ * editing gate state. Heuristic by nature: a path held in a variable first (`p = 'state.yaml'`,
+ * then `open(p, 'w')`) is not seen, which is why the gate files are also immutable to the
+ * agent's own file tools and are meant to be reviewed, not trusted blindly.
+ * @param {string} src
+ */
+function protectedWriteInSource(src) {
+  const calls = /\b(open|writeFile\w*|appendFile\w*|createWriteStream|unlink\w*|rmSync|rm|truncate|copyFile\w*|renameSync|rename|move|write_text|write_bytes)\s*\(([^)]*)\)/g
+  let m
+  while ((m = calls.exec(src)) !== null) {
+    const [, fn, args] = m
+    if (!mentionsProtected(args)) continue
+    if (fn === 'open' && !/['"][wax+][bt+]?['"]/.test(args)) continue // a read
+    return true
+  }
+  return /\bPath\s*\([^)]*\)\s*\.\s*(write_text|write_bytes|unlink|touch)\b/.test(src) && mentionsProtected(src)
+}
+
+/** An interpreter given source code inline: `python -c`, `node -e`, `perl -pi -e`, ... @param {string} cmd */
+const hasInlineSource = (cmd) => /\b(python[\d.]*|node|deno|bun|ruby|perl|php|osascript)\b[^|;&\n]*?\s(-c|-e|-E|-pi\S*|-i\S*|--eval|-r)\b/i.test(cmd)
+
+/** Source that writes, removes or moves files. Best effort: a heuristic, stated as one. @param {string} cmd */
+const inlineSourceWrites = (cmd) =>
+  /open\s*\([^)]*['"][wax+][b+]?['"]|\.write(_text|_bytes)?\s*\(|writeFile|appendFile|createWriteStream|\bmkdir|\bunlink|\brename|copyFile|\brm(Sync)?\s*\(|\btruncate|shutil|os\.(system|remove|rename|unlink)|subprocess|child_process|\bspawn|File\.(write|open)|\bsystem\s*\(/i.test(cmd)
+
+/** Commands that change files through arguments the shell tokenizer cannot attribute. @param {string} cmd */
+const hasOpaqueWriter = (cmd) =>
+  /(^|[\s;|&(])(patch|ed|ex|vim?|nano|rsync|install|ln|git\s+(?:-\S+\s+\S+\s+)*(?:apply|am|checkout|restore|stash|reset|rm|mv|cherry-pick|revert|merge|rebase|pull))\b/i.test(cmd)
+
+/**
+ * Targets of the verbs that delete, move or empty things. Used for the guard's own files (see
+ * {@link coversGuard}): removing a file is not writing one, but it disables the guard just as
+ * completely. `find` only counts when it acts (`-delete`, `-exec`), so a read-only `find .` is
+ * not mistaken for deleting the project.
  * @param {string} command
  * @returns {string[]}
  */
 function shellDeleteTargets(command) {
   const tokens = shellTokens(command)
   const out = []
+  const VERBS = new Set(['rm', 'unlink', 'mv', 'truncate', 'shred', 'find', 'rsync'])
   for (let i = 0; i < tokens.length; i++) {
-    if (unquote(tokens[i]) !== 'rm' && unquote(tokens[i]) !== 'unlink') continue
-    for (let j = i + 1; j < tokens.length && !/^[><|;&]+$/.test(tokens[j]); j++) {
-      const a = unquote(tokens[j])
-      if (!a.startsWith('-')) out.push(a)
+    const verb = unquote(tokens[i])
+    if (!VERBS.has(verb)) continue
+    const args = []
+    for (let j = i + 1; j < tokens.length && !/^[><|;&]+$/.test(tokens[j]); j++) args.push(unquote(tokens[j]))
+    if (verb === 'find' && !args.some((a) => /^-(delete|exec|execdir|ok|fprint\w*|fls)$/.test(a))) continue
+    if (verb === 'rsync' && !args.some((a) => a.startsWith('--delete') || a.startsWith('--remove'))) continue
+    for (const a of args) if (!a.startsWith('-')) out.push(a)
+  }
+  return out
+}
+
+/**
+ * Heredoc bodies, split by what they are: prose (a commit message, a file being written) is
+ * blanked out of the command so its words are not read as commands; a body fed to an
+ * interpreter (`python3 - <<'EOF'`) is the PROGRAM, and is returned for inspection.
+ * @param {string} command
+ * @returns {{prose: string, programs: string[]}}
+ */
+function splitHeredocs(command) {
+  const programs = []
+  const prose = command.replace(/^([^\n]*)<<-?\s*(['"]?)([A-Za-z_][\w-]*)\2([^\n]*)\r?\n([\s\S]*?)\r?\n[ \t]*\3(?=\s|$)/gm, (_m, head, _q, delim, tail, body) => {
+    if (/\b(python[\d.]*|node|deno|bun|ruby|perl|php|bash|sh|zsh)\b/i.test(head) && !/\bcat\b/.test(head)) programs.push(body)
+    return `${head}<<${delim}${tail}\n<heredoc-body-omitted>\n${delim}`
+  })
+  return { prose, programs }
+}
+
+/**
+ * Where the shell is when a command's relative paths are read: the folder of the last absolute
+ * `cd` in it (`cd ~/Desktop/other && find . -delete` acts on `other`, not on this project), else
+ * where the call started. A `cd` to a variable is not followed.
+ * @param {string} command @param {string} start
+ */
+function shellBase(command, start) {
+  const tokens = shellTokens(splitHeredocs(command).prose)
+  let base = start
+  for (let i = 0; i < tokens.length - 1; i++) {
+    if (unquote(tokens[i]) !== 'cd') continue
+    let t = unquote(tokens[i + 1])
+    if (!t || /[$`*?]/.test(t) || t === '-') continue
+    if (t === '~' || t.startsWith('~/')) t = join(homedir(), t.slice(1))
+    base = resolve(base, t)
+  }
+  return base
+}
+
+/**
+ * Patch files a command applies (`git apply p.diff`, `patch -i p.diff`, `patch < p.diff`), plus
+ * `-` for a patch on stdin: its content is not on disk, so the caller treats it as unreadable.
+ * @param {string} command
+ * @returns {string[]}
+ */
+function patchFilesOf(command) {
+  const tokens = shellTokens(command)
+  const out = []
+  for (let i = 0; i < tokens.length; i++) {
+    const verb = unquote(tokens[i])
+    const isGit = verb === 'git'
+    const next = []
+    for (let j = i + 1; j < tokens.length && !/^[|;&]+$/.test(tokens[j]); j++) next.push(tokens[j])
+    if (isGit) {
+      const k = next.findIndex((a) => a === 'apply' || a === 'am')
+      if (k < 0) continue
+      const files = next.slice(k + 1).filter((a) => !a.startsWith('-') || a === '-')
+      out.push(...(files.length ? files.map(unquote) : ['-']))
+    } else if (verb === 'patch') {
+      const fromFlag = next.findIndex((a) => a === '-i' || a.startsWith('--input'))
+      if (fromFlag >= 0) out.push(unquote(next[fromFlag].includes('=') ? next[fromFlag].split('=')[1] : (next[fromFlag + 1] ?? '-')))
+      else {
+        const lt = next.findIndex((a) => a === '<')
+        out.push(lt >= 0 ? unquote(next[lt + 1] ?? '-') : '-')
+      }
     }
   }
   return out
@@ -312,6 +522,37 @@ function parseState(text) {
   }
 }
 
+/**
+ * Does this initiative's state.yaml still match the seal the helper wrote when it last changed a
+ * gate? The fields and canonical string are the ones `src/initiatives/seal.ts` signs (tests run
+ * this hook against that module). `legacy` = a project that has never been sealed: nothing to
+ * check yet, so it keeps working until its next sanctioned change creates the first seal.
+ * @param {string} cwd @param {string} id @param {string} text
+ * @returns {'ok'|'legacy'|'missing'|'mismatch'|'nokey'}
+ */
+function sealStatus(cwd, id, text) {
+  const sealsDir = resolve(cwd, '.genesis', 'seals')
+  const file = join(sealsDir, id + '.json')
+  if (!existsSync(file)) return existsSync(sealsDir) ? 'missing' : 'legacy'
+  let key
+  try {
+    const hex = readFileSync(join(homedir(), '.genesis', 'seal.key'), 'utf8').trim()
+    if (!/^[0-9a-f]{64}$/.test(hex)) return 'nokey'
+    key = Buffer.from(hex, 'hex')
+  } catch {
+    return 'nokey'
+  }
+  try {
+    const saved = JSON.parse(readFileSync(file, 'utf8'))
+    const s = parseState(text)
+    const want = createHmac('sha256', key).update([id, s.proposal, s.implementation, s.design, s.need, s.scope, s.gate].join('\n')).digest()
+    const have = Buffer.from(String(saved.sig ?? ''), 'hex')
+    return have.length === want.length && timingSafeEqual(have, want) ? 'ok' : 'mismatch'
+  } catch {
+    return 'mismatch'
+  }
+}
+
 /** @param {string} cwd */
 function activeInitiatives(cwd) {
   const dir = resolve(cwd, 'openspec', 'changes')
@@ -325,12 +566,15 @@ function activeInitiatives(cwd) {
   for (const name of names) {
     if (name === 'archive') continue
     const sp = join(dir, name, 'state.yaml')
-    if (existsSync(sp)) out.push({ id: name, ...parseState(readFileSync(sp, 'utf8')) })
+    if (existsSync(sp)) {
+      const text = readFileSync(sp, 'utf8')
+      out.push({ id: name, ...parseState(text), seal: sealStatus(cwd, name, text) })
+    }
   }
   return out
 }
 
-/** @typedef {{id?:string, proposal:string, implementation:string, design:string, need:string, scope:string, gate:string}} InitiativeState */
+/** @typedef {{id?:string, proposal:string, implementation:string, design:string, need:string, scope:string, gate:string, seal?:string}} InitiativeState */
 
 /** @param {string} path */
 function readJson(path) {
@@ -397,6 +641,7 @@ function designSigned(s, gateOn) {
  */
 function approved(s, gateOn) {
   return (
+    (s.seal === undefined || s.seal === 'ok' || s.seal === 'legacy') &&
     s.proposal === 'approved' &&
     s.implementation === 'approved' &&
     designSigned(s, gateOn) &&
@@ -431,15 +676,30 @@ function main() {
   try {
     payload = JSON.parse(raw)
   } catch {
-    payload = {}
+    payload = undefined
+  }
+  // Fail CLOSED on a call this hook cannot read. Exit code 1 (a crash) and a missing script are
+  // "non-blocking" to Claude Code, so the only way to refuse is to refuse explicitly: reading
+  // nothing and allowing is how an unreadable write used to go straight through.
+  if (typeof payload !== 'object' || payload === null) {
+    block('this hook could not read the tool call it was given, so it cannot tell whether it is safe. Blocking.')
   }
 
-  const cwd = payload?.cwd || process.cwd()
-
-  if (!isGenesisProject(cwd)) process.exit(0)
+  // The project root, found by walking up: the payload's cwd is wherever the shell happens to
+  // be (`src/`), and treating it as the root switched the whole gate off.
+  // A cwd that exists is the answer: a folder with no Genesis above it is inert, and falling
+  // back to some other folder would gate somebody else's project. The environment is consulted
+  // only when the payload names no usable folder.
+  const given = typeof payload.cwd === 'string' && payload.cwd !== '' && existsSync(payload.cwd) ? payload.cwd : undefined
+  const callCwd = given ?? process.env.CLAUDE_PROJECT_DIR ?? process.cwd()
+  const root = given ? findRoot(given) : (findRoot(process.env.CLAUDE_PROJECT_DIR) ?? findRoot(process.cwd()))
+  if (!root) process.exit(0)
+  const cwd = root
+  /** Relative paths in a command mean relative to where the shell is, not to the project root. @param {string} p */
+  const toAbs = (p) => (isAbsolute(p) ? p : resolve(shellBase(commandText(payload?.tool_input), existsSync(callCwd) ? callCwd : root), p))
 
   const input = payload?.tool_input ?? {}
-  const paths = writtenPaths(input)
+  const paths = writtenPaths(input).map(toAbs)
 
   // 0a. A shell command puts bytes in a file without ever reaching Write/Edit/apply_patch,
   //     so `cat > src/app.ts` would otherwise make this gate optional for anyone who knows
@@ -448,7 +708,7 @@ function main() {
   //     those is the guard's job, not the gate's.
   const text = commandText(input)
   if (!text.includes('*** Begin Patch')) {
-    const shell = shellWritePaths(text)
+    const shell = shellWritePaths(splitHeredocs(text).prose)
     if (shell.unresolved) {
       block(
         'this command writes to a target that cannot be read here (a variable or a glob),\n' +
@@ -456,7 +716,37 @@ function main() {
           'write the file with a literal path, or through a normal file edit.',
       )
     }
-    for (const p of shell.paths) if (underDir(cwd, '.', p)) paths.push(p)
+    for (const p of shell.paths) if (underDir(cwd, '.', toAbs(p))) paths.push(toAbs(p))
+
+    // Writes the hook cannot attribute to a path. Genesis's own files are blocked in every
+    // phase; anything else is a code write the gate must see. A heredoc body is data (a commit
+    // message) unless it is fed to an interpreter, where it is the program.
+    const { prose, programs } = splitHeredocs(text)
+    const source = [prose, ...programs].join('\n')
+    const writesViaCode = (hasInlineSource(prose) || programs.length > 0) && inlineSourceWrites(source)
+    // A writer verb and a protected name in the SAME command (`git restore state.yaml`), not merely
+    // somewhere in one long line; and a command that first `cd`s to another project acts there.
+    const actsHere = underDir(cwd, '.', shellBase(text, existsSync(callCwd) ? callCwd : root)) || text.includes(root)
+    const opaqueHit = actsHere && prose.split(/&&|\|\||[;|\n]/).some((seg) => hasOpaqueWriter(seg) && mentionsProtected(seg))
+    if ((writesViaCode && protectedWriteInSource(source)) || opaqueHit) {
+      block(
+        'this command can change files through code the hook cannot read (an interpreter one-liner, a patch, a symlink,\n' +
+          'a git restore) and it names a file Genesis owns (gate state, the decision ledger, the guard, its settings).\n' +
+          'Those are changed only by their command — `genesis gate approve`, `genesis decide`. To edit one of your own files,\n' +
+          'use a normal file edit rather than a script.',
+      )
+    }
+    for (const patchFile of patchFilesOf(prose)) {
+      let body
+      try {
+        body = readFileSync(toAbs(patchFile), 'utf8')
+      } catch {
+        block(`this command applies a patch (${patchFile}) that cannot be read, so what it writes cannot be seen. Blocking.`)
+      }
+      if (mentionsProtected(body)) block(`the patch ${patchFile} touches a file Genesis owns (gate state, ledger, guard or settings).`)
+      paths.push(resolve(cwd, '.patched-by-command'))
+    }
+    if (writesViaCode) paths.push(resolve(cwd, '.inline-code-write'))
   }
 
   // 0aa. The guard/gate mechanism's own files (see isGuardPath) — blocked outright, before
@@ -465,7 +755,7 @@ function main() {
   //      gate-state check that a project with no (or a long-approved) initiative would skip
   //      entirely. Covers deletion too (`rm .genesis/guard/check.js`), which a write-path
   //      scan alone would miss.
-  const tamperTargets = [...paths, ...shellDeleteTargets(text)].filter((p) => isGuardPath(cwd, p))
+  const tamperTargets = [...paths.filter((p) => isGuardPath(cwd, p)), ...shellDeleteTargets(text).map(toAbs).filter((p) => coversGuard(cwd, p))]
   if (tamperTargets.length > 0) {
     block(
       `this touches Genesis's own guardrail files (${[...new Set(tamperTargets)].join(', ')}).\n` +
@@ -497,7 +787,7 @@ function main() {
   //    the gate record together is precisely the self-approval this hook exists to stop.
   for (const filePath of paths) {
     if (!underDir(cwd, 'openspec', filePath)) continue
-    const base = basename(filePath)
+    const base = basename(canon(filePath))
     if (base === 'state.yaml') {
       block(
         'openspec state.yaml is human-signed via `genesis gate approve` / `genesis infra accept`.\n' +
@@ -516,11 +806,23 @@ function main() {
   //     `genesis how-it-works`. A hand edit is a second source of truth that drifts — the
   //     same reason decisions.md is helper-written. Checked on every path, like above.
   for (const filePath of paths) {
-    if (GENERATED_DOCS.some((g) => resolve(cwd, g) === (isAbsolute(filePath) ? resolve(filePath) : resolve(cwd, filePath)))) {
+    if (GENERATED_DOCS.some((g) => canon(resolve(cwd, g)) === canon(isAbsolute(filePath) ? filePath : resolve(cwd, filePath)))) {
       block(
         `${basename(filePath)} is generated from the decision ledger — it is never edited by hand.\n` +
           'Record the decision with `genesis decide <id> "<what>" --why ... --evidence <file>`, then run\n' +
           '`genesis how-it-works` to regenerate it.',
+      )
+    }
+  }
+
+  // 1c. The reading check: the answer key and progress in .checks/ are written only by
+  //     `genesis how-it-works` / `genesis check`. An agent that could edit them could pass
+  //     the builder's checkpoints for them. (Reading them is not blocked: this hook only sees writes.)
+  for (const filePath of paths) {
+    if (underDir(cwd, '.checks', filePath)) {
+      block(
+        'The reading-check key and progress in .checks/ are written only by `genesis how-it-works` and `genesis check`.\n' +
+          'The builder proves they read the document by answering the checkpoints themselves.',
       )
     }
   }
@@ -546,6 +848,16 @@ function main() {
       )
     }
     const gateOn = designGateOn(cwd)
+    // A state.yaml that does not match its seal was changed outside `genesis`: say so, before the
+    // generic "not approved yet", because the fix is different (review it and re-seal, or revert).
+    const broken = inits.find((s) => s.seal === 'mismatch' || s.seal === 'missing' || s.seal === 'nokey')
+    if (broken) {
+      block(
+        `"${broken.id}": state.yaml does not match its seal (${broken.seal === 'nokey' ? 'the seal key is missing' : broken.seal === 'missing' ? 'no seal was recorded' : 'it was changed outside genesis'}).\n` +
+          'Gates are changed only by `genesis gate approve` / `infra accept` / `design set`. If you edited it yourself and trust it,\n' +
+          `review it and run \`npm run genesis -- seal ${broken.id}\` in a terminal; otherwise restore it from git. No code writes until then.`,
+      )
+    }
     if (inits.some((s) => approved(s, gateOn))) process.exit(0)
     // Blocked only on the design signature: say exactly that, it's the most
     // actionable message a person can get (and the screens are already on disk).

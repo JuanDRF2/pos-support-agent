@@ -14,7 +14,7 @@ infrastructure or handles real data, before accepting the infra gate.
   validate, sanitize, and use parameterized queries (never string-built SQL).
 - **Encrypt in transit and at rest.** HTTPS/TLS always; never disable certificate
   verification. Turn on encryption for storage/databases that support it.
-- **Reuse identity, don't invent it.** Use the org's existing SSO/auth. Rolling
+- **Reuse identity, don't invent it.** Use an existing SSO/auth system. Rolling
   your own authentication or storing passwords is a hard breakpoint.
 - **Don't leak data.** Never log secrets, tokens, or personal data. Lock down
   public access on buckets/endpoints by default.
