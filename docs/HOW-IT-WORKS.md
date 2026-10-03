@@ -39,8 +39,6 @@
 - **Fuente:** `src/agent/answer.ts`
 - **Registrada:** 2026-10-01
 
-> 🔎 **Punto de control 1.** Antes de seguir, responde con tus palabras: `npm run genesis -- check 1 "<tu respuesta>"` (primero `npm run genesis -- check` te muestra la pregunta).
-
 ### DEC-pos-support-chat-agent-with-rag-and-eval-03 — Fully local stack: transformers.js embeddings (Xenova/all-MiniLM-L6-v2) and Ollama generation, no hosted API (reemplazada por DEC-pos-support-chat-agent-with-rag-and-eval-15)
 
 ### DEC-pos-support-chat-agent-with-rag-and-eval-04 — Deterministic evals (retrieval, faithfulness, correct refusal) instead of an LLM judge (reemplazada por DEC-pos-support-chat-agent-with-rag-and-eval-16)
@@ -77,6 +75,8 @@
 - **Fuente:** `src/config.ts`, `src/evals/passmarks.ts`
 - **Registrada:** 2026-10-01
 
+> 🔎 **Punto de control 1.** Antes de seguir, contesta una pregunta de opción múltiple (una letra): `npm run genesis -- check` te la muestra y `npm run genesis -- check 1 <A|B|C>` responde. También puedes hacerlo con los botones de la app.
+
 ### DEC-pos-support-chat-agent-with-rag-and-eval-09 — Retrieval scored by section (article plus heading in top 3) instead of by article
 > **En palabras simples:** Se eligió puntuar la recuperación por sección (artículo más encabezado) en lugar de solo por artículo, porque con 10 fragmentos (chunks) y 3 artículos, la puntuación a nivel de artículo era demasiado simple para diferenciar respuestas correctas.
 - **Por qué:** The index has only 10 chunks and 3 articles, so top 3 cover 30% of it and article-level scoring is too easy; each answerable question lists its answering section headings (sourceHeadings).
@@ -84,6 +84,8 @@
 - **Qué se rompe primero al escalar:** no hay decisión escrita
 - **Fuente:** `src/evals/golden.json`, `src/evals/score.ts`
 - **Registrada:** 2026-10-01
+
+> 🔎 **Punto de control 2.** Antes de seguir, contesta una pregunta de opción múltiple (una letra): `npm run genesis -- check` te la muestra y `npm run genesis -- check 2 <A|B|C>` responde. También puedes hacerlo con los botones de la app.
 
 ### DEC-pos-support-chat-agent-with-rag-and-eval-10 — Golden set written after the docs, with paraphrases, near-miss traps, injections and held-out questions (reemplazada por DEC-pos-support-chat-agent-with-rag-and-eval-14)
 
@@ -111,6 +113,8 @@
 - **Fuente:** `src/evals/score.ts`
 - **Registrada:** 2026-10-01
 
+> 🔎 **Punto de control 3.** Antes de seguir, contesta una pregunta de opción múltiple (una letra): `npm run genesis -- check` te la muestra y `npm run genesis -- check 3 <A|B|C>` responde. También puedes hacerlo con los botones de la app.
+
 ### DEC-pos-support-chat-agent-with-rag-and-eval-14 — Golden set of 23 questions written from the three articles after they were fixed, with 6 held-out questions, and its closeness to the source stated as a limit
 > **En palabras simples:** Se evaluó con 23 preguntas de tres artículos cortos, reservando 6 para test independiente. Cada pregunta afecta el resultado (~4 puntos), lo que valida el dominio específico pero limita la generalización a otras fuentes.
 - **Por qué:** The questions came from the same three short articles the model reads, with paraphrases, near-miss traps, injections and 6 held-out questions not used to tune the prompt or threshold. Because the author wrote both the articles and the questions, a clean score says little about other wording; the held-out ones have been looked at several times so they are only weakly independent.
@@ -119,7 +123,7 @@
 - **Fuente:** `src/evals/golden.json`, `src/evals/golden.ts`, `README.md`
 - **Registrada:** 2026-10-01
 
-> 🔎 **Punto de control 2.** Antes de seguir, responde con tus palabras: `npm run genesis -- check 2 "<tu respuesta>"` (primero `npm run genesis -- check` te muestra la pregunta).
+> 🔎 **Punto de control 4.** Antes de seguir, contesta una pregunta de opción múltiple (una letra): `npm run genesis -- check` te la muestra y `npm run genesis -- check 4 <A|B|C>` responde. También puedes hacerlo con los botones de la app.
 
 ### DEC-pos-support-chat-agent-with-rag-and-eval-15 — Fully local and free stack: transformers.js embeddings (Xenova/all-MiniLM-L6-v2) and Ollama generation, no hosted API
 > **En palabras simples:** Usar transformers.js (librería que ejecuta modelos en el navegador) con el modelo Xenova/all-MiniLM-L6-v2 para embeddings (representaciones vectoriales) y Ollama (servidor local para modelos de lenguaje) para generación. Así el proyecto es gratuito, sin claves API y completamente local.
@@ -136,8 +140,6 @@
 - **Qué se rompe primero al escalar:** no hay decisión escrita
 - **Fuente:** `src/evals/score.ts`, `src/evals/report.ts`, `src/evals/run.ts`
 - **Registrada:** 2026-10-01
-
-> 🔎 **Punto de control 3.** Antes de seguir, responde con tus palabras: `npm run genesis -- check 3 "<tu respuesta>"` (primero `npm run genesis -- check` te muestra la pregunta).
 
 ## 3. Preguntas de entrevista (10 de 10 posibles)
 
