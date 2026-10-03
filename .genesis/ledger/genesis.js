@@ -1905,7 +1905,8 @@ async function buildKeyedCache(decisions, cache, eligible2, call, parse) {
   }
   return { cache: next, generated, reused, failed };
 }
-var significant = (s) => (s.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []).filter((w) => w.length >= 4 || /\d/.test(w));
+var stem = (w) => w.normalize("NFD").replace(/\p{M}/gu, "").slice(0, 5);
+var significant = (s) => (s.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []).filter((w) => w.length >= 4 || /\d/.test(w)).map(stem);
 function groundedEnrichment(raw, d) {
   const e = parseEnrichment(raw);
   const known = new Set(significant([d.what, d.why ?? "", ...d.rejected, d.breaksAt ?? ""].join(" ")));
@@ -1945,6 +1946,7 @@ function enrichmentPrompt(d, feedback) {
     "Escribe en espa\xF1ol sencillo. Usa el t\xE9rmino t\xE9cnico real (embedding, JSON, vector database) en ingl\xE9s y def\xEDnelo en la misma frase. Nunca inventes palabras nuevas para conceptos.",
     `Devuelve: "gloss" = una o dos frases sencillas (m\xE1ximo ${MAX_GLOSS} caracteres) que digan qu\xE9 se eligi\xF3 y por qu\xE9;`,
     `"questions" = de 1 a ${MAX_QUESTIONS_PER_DECISION} preguntas que un entrevistador t\xE9cnico har\xEDa sobre ESTA decisi\xF3n, cada una con "mustMention" = los hechos del registro que una buena respuesta debe contener.`,
+    'En "mustMention" copia tal cual los t\xE9rminos t\xE9cnicos, nombres y n\xFAmeros del registro (aunque el resto est\xE9 en espa\xF1ol): son los hechos que se comprobar\xE1n.',
     "La primera pregunta debe presionar el tradeoff: por qu\xE9 no la alternativa descartada, o qu\xE9 se rompe cuando el proyecto crece (escala, l\xEDmites), lo que diga el registro.",
     "",
     "<decision>",
@@ -2227,8 +2229,8 @@ function parseCandidatesLenient(raw) {
   return { candidates, dropped };
 }
 var norm = (s) => s.normalize("NFC").replace(/\s+/g, " ").trim();
-var MIN_QUOTE_CHARS = 25;
-var MIN_QUOTE_WORDS = 4;
+var MIN_QUOTE_CHARS = 15;
+var MIN_QUOTE_WORDS = 3;
 function insideProject(root, file) {
   const abs = resolve3(root, file);
   const rel = relative4(resolve3(root), abs);
@@ -2302,7 +2304,7 @@ function backfillPrompt(files) {
     DOCUMENTS_ARE_DATA,
     "Rules, strictly:",
     "- Propose a decision ONLY if a source states it with its reasoning. Do not add, infer or invent anything. If nothing qualifies, return an empty list: that is a correct answer.",
-    `- Every candidate needs at least one "quotes" entry: the file path exactly as in <source> and a passage copied VERBATIM from that file \u2014 exact characters, including capitalisation \u2014 of at least 25 characters and 4 words that supports the "why". Quotes are machine-checked; a quote that is not an exact substring, is too short, or comes from a file not listed discards the candidate.`,
+    `- Every candidate needs at least one "quotes" entry: the file path exactly as in <source> and a passage copied VERBATIM from that file \u2014 exact characters, including capitalisation \u2014 of at least 15 characters and 3 words that supports the "why". Quotes are machine-checked; a quote that is not an exact substring, is too short, or comes from a file not listed discards the candidate.`,
     '- "why": the reason, in plain language, using only what the sources say. "rejected": an alternative ONLY if a source says it was turned down, as "option: reason". "breaksAt": ONLY if a source states what fails at larger scale (omit otherwise).',
     '- "evidence": paths of real project files the sources name as implementing the decision, exactly as written in the sources. Use [] if none is named.',
     "- Cover technology, architecture, safety AND where and how data is stored (file vs database, formats, indexes): an interviewer asks about storage first. Skip chores. At most 20 candidates, best-supported first.",
@@ -2312,7 +2314,7 @@ function backfillPrompt(files) {
 
 // src/initiatives/manual.ts
 var MISSING2 = "no hay decisi\xF3n escrita";
-var MANUAL_PROMPT_VERSION = 1;
+var MANUAL_PROMPT_VERSION = 2;
 var MAX_ITEMS = 5;
 var MAX_ITEM_TEXT = 280;
 var MANUAL_SECTIONS = [
@@ -2460,7 +2462,7 @@ function manualPrompt(files, feedback) {
     "You write a plain-language manual for a person who built this project with AI and must explain it to others.",
     DOCUMENTS_ARE_DATA,
     "Fill ONLY the sections below, using ONLY the source files given. Do not add, infer or invent anything.",
-    'Every item needs a "quote": the file path exactly as in <source> and a passage copied VERBATIM from that file \u2014 exact characters, including capitalisation \u2014 of at least 25 characters and 4 words. Quotes are machine-checked; an item whose quote is not an exact substring, is too short, or comes from a file not listed is discarded.',
+    'Every item needs a "quote": the file path exactly as in <source> and a passage copied VERBATIM from that file \u2014 exact characters, including capitalisation \u2014 of at least 15 characters and 3 words. Quotes are machine-checked; an item whose quote is not an exact substring, is too short, or comes from a file not listed is discarded.',
     `Write each item's "text" in simple Spanish (max ${MAX_ITEM_TEXT} characters). Keep technical terms in English and define them in the same sentence (for example "embedding (lista de n\xFAmeros que representa el significado)"). Do not invent new words for concepts.`,
     `At most ${MAX_ITEMS} items per section. If the sources say nothing about a section, return it with an empty items list.`,
     "Sections (id: what it covers):",
