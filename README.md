@@ -173,3 +173,7 @@ openspec/           the plan and acceptance criteria for the work
 - **"The index file was not found" / "does not match its pinned hash"**: run `npm run ingest`.
 - **"Port 3000 is already in use"**: set `PORT` to another number.
 - **The first answer after a pause takes 15 to 30 seconds**: Ollama is reloading the model; later answers are faster.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
