@@ -2,11 +2,11 @@
 
 ## The problem I was actually solving
 
-Four years into product management, I kept getting turned down for the same reason, stated
-explicitly by three different companies: no shipped agentic-AI artifact. AgileEngine wanted "shipped
-agentic AI product in production." Applaudo wanted "AI/ML-native product work: RAG, semantic
-search." Truelogic wanted "deep LLM/agent-memory systems fluency." That's not a seniority gap or a
-communication gap. It's a specific, nameable thing I hadn't built yet.
+Four years into product management, I kept running into the same requirement in the AI product
+roles I was targeting: a shipped agentic-AI artifact. Job descriptions asked for a "shipped agentic
+AI product in production," for "AI/ML-native product work: RAG, semantic search," and for "deep
+LLM/agent-memory systems fluency." That's not a seniority gap or a communication gap. It's a
+specific, nameable thing I hadn't built yet.
 
 So I built it, but I didn't want to build a demo that just *looked* like it worked. I wanted to
 build something I'd actually trust, and the only way to know if I trusted it was to test it hard
@@ -16,7 +16,7 @@ enough to find out where it didn't hold up.
 
 A support chat for a POS (point-of-sale) product. A merchant asks a question (how to process a
 partial refund, how to renew a subscription, how to gift a renewal) and the agent answers from
-three real help articles using actual retrieval-augmented generation (RAG), not a scripted FAQ
+three help articles I wrote using actual retrieval-augmented generation (RAG), not a scripted FAQ
 bot. It runs entirely on my own machine: local embeddings for retrieval, a local model (Ollama)
 for generation, no paid or keyed API of any kind. The full build (architecture, setup, source) is
 in the repo's own README; this document is about the decisions, not the code.
@@ -68,15 +68,15 @@ else got left out.
 
 A real `npm test` run, not a cherry-picked one:
 
-| Category | All 23 questions | Held-out (6, never used to tune anything) | Pass mark |
+| Category | All questions (15 answerable, 23 in total) | Held-out (6, never used to tune anything) | Pass mark |
 |---|---|---|---|
 | Retrieval (correct section, not just correct document) | 15/15 (100%) | 4/4 | 90% |
 | Faithfulness (cites the source, invents nothing) | 14/15 (93%) | 3/4 | 85% |
 | Correct refusal | 23/23 (100%) | 6/6 | 95% |
 
 Zero `npm audit` vulnerabilities. Zero paid or keyed API anywhere in the code, confirmed with a
-repo search, not just a claim. 103 unit tests. Verified on a clean clone of the repo, not just on
-the machine that built it: install, ingest, test, the same result a stranger would get.
+repo search, not just a claim. 103 unit tests. To reproduce: install, ingest and test with the
+commands in the README (the tests need Ollama running locally).
 
 ## What it would take to run this on a real POS
 
@@ -104,7 +104,7 @@ what changes, not a hand-wave:
   context carried over, not lost.
 - **The eval suite needs to keep growing after I stop touching it.** A golden set someone else
   maintains, sampled human review layered on top of the deterministic checks, and monitoring for
-  when refusal rates or retrieval quality drift, none of which a one-person, one-week demo needs.
+  when refusal rates or retrieval quality drift, none of which a one-person demo needs.
 
 None of this is a criticism of the demo. It's the difference between proving the mechanism works
 and being ready to bet a real support queue on it, and I'd rather be able to name that gap clearly
