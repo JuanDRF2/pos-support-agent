@@ -32,8 +32,8 @@
 // envelope in `tool_input.command` that can touch MANY files at once. Everything below
 // works on the SET of paths a call writes, so one patch cannot slip a src/ change in
 // beside a legitimate planning edit.
-import { readFileSync, existsSync, readdirSync, realpathSync } from 'node:fs'
-import { createHmac, timingSafeEqual } from 'node:crypto'
+import { readFileSync, existsSync, readdirSync, realpathSync, statSync } from 'node:fs'
+import { createHash, createHmac, createPublicKey, timingSafeEqual, verify as cryptoVerify } from 'node:crypto'
 import { homedir } from 'node:os'
 import { resolve, relative, isAbsolute, join, basename, dirname } from 'node:path'
 
@@ -320,13 +320,25 @@ function shellWritePaths(command) {
  * planning artifacts — only the two directories that ARE the guard/gate are singled out).
  */
 const GUARD_DIRS = ['.genesis/guard', '.genesis/hooks', '.genesis/seals']
-const GUARD_FILES = ['.claude/settings.json', '.codex/hooks.json', '.codex/config.toml']
+const GUARD_FILES = [
+  '.claude/settings.json',
+  '.claude/settings.local.json',
+  '.codex/hooks.json',
+  '.codex/config.toml',
+  '.mcp.json',
+  // The public key signed approvals are checked against.
+  '.genesis/trust.json',
+  // `scripts` in package.json run on `npm test` / `npm run`, so editing it can swap the helper or the hook.
+  'package.json',
+]
+/** Per-user files that wire hooks into every project on the machine. */
+const USER_GUARD_FILES = [join(homedir(), '.claude', 'settings.json'), join(homedir(), '.genesis', 'signing.pub'), join(homedir(), '.genesis', 'signing-key.blob')]
 
 /** @param {string} cwd @param {string} filePath */
 function isGuardPath(cwd, filePath) {
   if (GUARD_DIRS.some((d) => underDir(cwd, d, filePath))) return true
   const abs = isAbsolute(filePath) ? filePath : resolve(cwd, filePath)
-  return GUARD_FILES.some((f) => canon(abs) === canon(resolve(cwd, f)))
+  return GUARD_FILES.some((f) => canon(abs) === canon(resolve(cwd, f))) || USER_GUARD_FILES.some((f) => canon(abs) === canon(f))
 }
 
 /**
@@ -338,10 +350,11 @@ function isGuardPath(cwd, filePath) {
 function coversGuard(cwd, filePath) {
   if (isGuardPath(cwd, filePath)) return true
   const abs = isAbsolute(filePath) ? filePath : resolve(cwd, filePath)
-  return [...GUARD_DIRS, ...GUARD_FILES].some((g) => {
-    const rel = relative(canon(abs), canon(resolve(cwd, g)))
+  const covers = (target) => {
+    const rel = relative(canon(abs), canon(target))
     return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel))
-  })
+  }
+  return [...GUARD_DIRS, ...GUARD_FILES].some((g) => covers(resolve(cwd, g))) || USER_GUARD_FILES.some(covers)
 }
 
 /**
@@ -353,8 +366,12 @@ function coversGuard(cwd, filePath) {
 const PROTECTED_TEXT = [
   /state\.yaml/i,
   /decisions\.md/i,
-  /\.genesis[\\/](guard|hooks)\b/i,
-  /\.claude[\\/]settings\.json/i,
+  /\.genesis[\\/](guard|hooks|seals)\b/i,
+  /seal\.key/i,
+  /signing\.pub|signing-key\.blob|trust\.json/i,
+  /openspec[\\/]changes[\\/][^\s'"]*[\\/]approvals[\\/]/i,
+  /\.claude[\\/]settings(\.local)?\.json/i,
+  /\.mcp\.json/i,
   /\.codex[\\/](hooks\.json|config\.toml)/i,
   /\.reading-signature\.json/i,
   /\.checks\b/i,
@@ -384,11 +401,36 @@ function protectedWriteInSource(src) {
 }
 
 /** An interpreter given source code inline: `python -c`, `node -e`, `perl -pi -e`, ... @param {string} cmd */
-const hasInlineSource = (cmd) => /\b(python[\d.]*|node|deno|bun|ruby|perl|php|osascript)\b[^|;&\n]*?\s(-c|-e|-E|-pi\S*|-i\S*|--eval|-r)\b/i.test(cmd)
+const hasInlineSource = (cmd) => /\b(python[\d.]*|node|deno|bun|ruby|perl|php|osascript|lua|tclsh|Rscript|pwsh|powershell)\b[^|;&\n]*?\s(-c|-e|-E|-pi\S*|-i\S*|--eval|-r)\b/i.test(cmd)
 
 /** Source that writes, removes or moves files. Best effort: a heuristic, stated as one. @param {string} cmd */
 const inlineSourceWrites = (cmd) =>
   /open\s*\([^)]*['"][wax+][b+]?['"]|\.write(_text|_bytes)?\s*\(|writeFile|appendFile|createWriteStream|\bmkdir|\bunlink|\brename|copyFile|\brm(Sync)?\s*\(|\btruncate|shutil|os\.(system|remove|rename|unlink)|subprocess|child_process|\bspawn|File\.(write|open)|\bsystem\s*\(/i.test(cmd)
+
+/**
+ * Inline source that talks about Genesis-owned places at all (the guard, the seals, the plan's
+ * record, the wiring). Deliberately broader than {@link PROTECTED_TEXT}: it is used on programs,
+ * where the path may be assembled from pieces and never appears as one literal.
+ * @param {string} src
+ */
+const touchesOwnedArea = (src) => /\.genesis|openspec|settings(\.local)?\.json|\.mcp\.json|hooks\.json|config\.toml|state\.yaml|decisions\.md|seals?[\\/.]|seal\.key/i.test(src)
+
+/** Code that is built or decoded at run time, so what it does cannot be read from the text. @param {string} src */
+const hasDynamicCode = (src) =>
+  /\b(eval|exec|execfile)\s*\(|\b(__import__|importlib|getattr|b64decode|atob|fromCharCode|vm\.run\w*|new\s+Function)\b|\bbase64\.\w*decode|\bchr\s*\(|\\x[0-9a-f]{2}/i.test(src)
+
+/** A path assembled from pieces (`'.gen'+'esis'`, `os.path.join`, an f-string, a chdir): the literal never appears. @param {string} src */
+const buildsPaths = (src) =>
+  /['"]\s*\+\s*['"]|\b(os\.path|posixpath|path|pathlib)\.(join|resolve)\s*\(|\bPath\s*\([^)]*\)\s*\/|\bf['"]|\.format\s*\(|\bos\.(environ|getcwd|chdir)|\bprocess\.(env|cwd|chdir)|__file__|__dirname/.test(src)
+
+/**
+ * An inline program that cannot be shown to leave the owned places alone: it evaluates code it
+ * builds at run time, or it can write AND (names those places or builds its paths from pieces).
+ * Free of writes is the only thing that clears it: guessing a literal path out of the call
+ * arguments is what a variable (`p = '.genesis/seals/x'; open(p, 'w')`) walks around.
+ * @param {string} src
+ */
+const inlineCodeUnprovable = (src) => hasDynamicCode(src) || (inlineSourceWrites(src) && (touchesOwnedArea(src) || buildsPaths(src)))
 
 /** Commands that change files through arguments the shell tokenizer cannot attribute. @param {string} cmd */
 const hasOpaqueWriter = (cmd) =>
@@ -504,22 +546,55 @@ function writtenPaths(input) {
  * @param {string} text
  */
 function parseState(text) {
-  /** @param {string} k */
-  const f = (k) => {
-    const m = text.match(new RegExp(`^\\s*${k}:\\s*(\\S+)`, 'm'))
-    return m ? m[1] : ''
+  // Read each key only from inside its own top-level block, never first-match across the file:
+  // a line smuggled above `gates:` (e.g. via a title with a newline) must not decide a gate.
+  // Mirrors src/initiatives/stateYaml.ts (`blockField`); tests/state-yaml.test.ts runs both.
+  /** @param {string} block @param {string} k */
+  const f = (block, k) => {
+    const lines = text.split('\n')
+    const start = lines.findIndex((l) => new RegExp('^' + block + ':\\s*(?:#.*)?$').test(l))
+    if (start === -1) return ''
+    // A second header for the same block means tampering: read nothing rather than pick one.
+    if (lines.some((l, i) => i > start && new RegExp('^' + block + ':\\s*(?:#.*)?$').test(l))) return ''
+    const re = new RegExp('^\\s+' + k + ':\\s*(\\S+)')
+    for (let i = start + 1; i < lines.length && (!/^\S/.test(lines[i]) || lines[i].startsWith('#')); i++) {
+      const m = lines[i].match(re)
+      if (m) return m[1]
+    }
+    return ''
   }
   return {
-    proposal: f('proposal'),
-    implementation: f('implementation'),
+    proposal: f('gates', 'proposal'),
+    implementation: f('gates', 'implementation'),
     // `design` is the gate (inside `gates:`); `need` lives in the `designSource:`
     // block. Both are absent on state.yaml files written before the design gate
     // existed, those default to "no UI", so nothing about them changes.
-    design: f('design') || 'n/a',
-    need: f('need') || 'none',
-    scope: f('scope') || 'none',
-    gate: f('gate') || 'n/a',
+    design: f('gates', 'design') || 'n/a',
+    need: f('designSource', 'need') || 'none',
+    scope: f('infra', 'scope') || 'none',
+    gate: f('infra', 'gate') || 'n/a',
   }
+}
+
+/**
+ * The `approvals:` trail as one value, mirroring `approvalsDigest` in src/initiatives/seal.ts: a hash of
+ * its `- item` lines in order; a second `approvals:` header (tampering) hashes to something no seal has.
+ * @param {string} text
+ */
+function approvalsDigest(text) {
+  const lines = text.split('\n')
+  const start = lines.findIndex((l) => /^approvals:/.test(l))
+  let items = []
+  if (start !== -1) {
+    if (lines.some((l, i) => i > start && /^approvals:/.test(l))) items = ['<duplicate approvals block>']
+    else {
+      for (let i = start + 1; i < lines.length && (!/^\S/.test(lines[i]) || lines[i].startsWith('#')); i++) {
+        const m = lines[i].match(/^\s+-\s+(.*)$/)
+        if (m) items.push(m[1].trim())
+      }
+    }
+  }
+  return createHash('sha256').update(JSON.stringify(items)).digest('hex')
 }
 
 /**
@@ -545,7 +620,10 @@ function sealStatus(cwd, id, text) {
   try {
     const saved = JSON.parse(readFileSync(file, 'utf8'))
     const s = parseState(text)
-    const want = createHmac('sha256', key).update([id, s.proposal, s.implementation, s.design, s.need, s.scope, s.gate].join('\n')).digest()
+    const fields = [id, s.proposal, s.implementation, s.design, s.need, s.scope, s.gate]
+    // v2 seals also cover the approvals trail (see src/initiatives/seal.ts); v1 ones do not.
+    if (saved.v === 2) fields.push(approvalsDigest(text))
+    const want = createHmac('sha256', key).update(fields.join('\n')).digest()
     const have = Buffer.from(String(saved.sig ?? ''), 'hex')
     return have.length === want.length && timingSafeEqual(have, want) ? 'ok' : 'mismatch'
   } catch {
@@ -553,8 +631,167 @@ function sealStatus(cwd, id, text) {
   }
 }
 
+// --- signed approvals (design: genesis-credential-separation-design.md) -----------------------------------------
+//
+// In signed mode a gate is approved only if `openspec/changes/<id>/approvals/<kind>.json` carries a valid
+// ECDSA signature, from the pinned public key, over a digest of what was reviewed. state.yaml is only a
+// cache: editing it decides nothing. Mirrors src/initiatives/approvals.ts (`reviewedDigest`,
+// `canonicalRecord`, `pinnedKey`); tests/signed-approvals.test.ts runs this hook against that module.
+
+/** @param {Buffer|string} b */
+const sha256hex = (b) => createHash('sha256').update(b).digest('hex')
+/** @param {string} s */
+const normText = (s) => s.replace(/\r\n/g, '\n')
+/** @param {string} s */
+const normTasks = (s) => normText(s).replace(/^(\s*[-*]\s*)\[[xX]\]/gm, '$1[ ]')
+
+/** @param {string} dir @param {string} rel @param {(s: string) => string} [norm] @returns {[string, string]} */
+function fileEntry(dir, rel, norm) {
+  const p = join(dir, rel)
+  try {
+    if (!existsSync(p) || !statSync(p).isFile()) return [rel, 'absent']
+    const raw = readFileSync(p)
+    return [rel, sha256hex(norm ? Buffer.from(norm(raw.toString('utf8'))) : raw)]
+  } catch {
+    return [rel, 'absent']
+  }
+}
+
+/** @param {string} dir @param {string} [base] @returns {string[]} */
+function listFiles(dir, base = dir) {
+  if (!existsSync(dir)) return []
+  const out = []
+  for (const name of readdirSync(dir).sort()) {
+    const p = join(dir, name)
+    if (statSync(p).isDirectory()) out.push(...listFiles(p, base))
+    else out.push(relative(base, p).split('\\').join('/'))
+  }
+  return out
+}
+
+/**
+ * @param {string} openspecDir @param {string} id @param {string} kind @param {{scope: string, need: string, reason: string}} x
+ */
+function reviewedDigest(openspecDir, id, kind, x) {
+  const dir = join(openspecDir, 'changes', id)
+  let files = []
+  let more = {}
+  switch (kind) {
+    case 'proposal':
+      files = [fileEntry(dir, 'proposal.md', normText)]
+      break
+    case 'implementation': {
+      const specs = listFiles(join(dir, 'specs')).filter((f) => f.endsWith('.md') && !f.includes('/'))
+      files = [
+        fileEntry(dir, 'proposal.md', normText),
+        fileEntry(dir, 'loop-contract.md', normText),
+        ...specs.map((f) => fileEntry(dir, 'specs/' + f, normText)),
+        fileEntry(dir, 'tasks.md', normTasks),
+      ]
+      more = { scope: x.scope, need: x.need }
+      break
+    }
+    case 'design':
+      files = listFiles(join(dir, 'design')).map((f) => fileEntry(dir, 'design/' + f))
+      break
+    case 'design-waive':
+      more = { reason: x.reason }
+      break
+    case 'infra-accept':
+    case 'infra-lower':
+      more = { scope: x.scope }
+      break
+    default:
+      return ''
+  }
+  return sha256hex(JSON.stringify(['genesis-digest-v1', kind, files, more]))
+}
+
 /** @param {string} cwd */
-function activeInitiatives(cwd) {
+function hasSignedRecords(cwd) {
+  const changes = join(cwd, 'openspec', 'changes')
+  try {
+    return readdirSync(changes).some((name) => name !== 'archive' && existsSync(join(changes, name, 'approvals')) && readdirSync(join(changes, name, 'approvals')).some((f) => f.endsWith('.json')))
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Which key must approvals be signed by? A project is in signed mode when it carries its own pin,
+ * `.genesis/trust.json`; one that already holds signed records but no pin is an error, so deleting the pin
+ * is not a way back to legacy seals. If the machine has a signing key too, the two must agree.
+ * @param {string} cwd
+ * @returns {{mode: 'legacy'} | {mode: 'signed', pub: Buffer} | {mode: 'error', reason: string}}
+ */
+function pinnedKey(cwd) {
+  let trustPub
+  const tp = join(cwd, '.genesis', 'trust.json')
+  if (existsSync(tp)) {
+    try {
+      const t = JSON.parse(readFileSync(tp, 'utf8'))
+      trustPub = Buffer.from(String(t.pub ?? ''), 'base64')
+      if (t.mode !== 'signed' || trustPub.length === 0 || sha256hex(trustPub) !== t.kid) return { mode: 'error', reason: '.genesis/trust.json is not a valid signed-mode pin' }
+    } catch {
+      return { mode: 'error', reason: '.genesis/trust.json cannot be read' }
+    }
+  }
+  let machinePub
+  const mp = join(homedir(), '.genesis', 'signing.pub')
+  if (existsSync(mp)) {
+    try {
+      machinePub = readFileSync(mp)
+    } catch {
+      return { mode: 'error', reason: '~/.genesis/signing.pub cannot be read' }
+    }
+  }
+  if (trustPub && machinePub && !trustPub.equals(machinePub)) return { mode: 'error', reason: "the key pinned in .genesis/trust.json is not this machine's signing key" }
+  if (trustPub) return { mode: 'signed', pub: trustPub }
+  if (hasSignedRecords(cwd)) return { mode: 'error', reason: 'this project holds signed approvals but .genesis/trust.json is missing (restore it from git)' }
+  return { mode: 'legacy' }
+}
+
+/**
+ * Is there a valid signed record of `kind` for this initiative, over what is reviewed now?
+ * @param {string} cwd @param {string} id @param {string} kind @param {Buffer} pub @param {ReturnType<typeof parseState>} s
+ */
+function signedRecordValid(cwd, id, kind, pub, s) {
+  let r
+  try {
+    r = JSON.parse(readFileSync(join(cwd, 'openspec', 'changes', id, 'approvals', kind + '.json'), 'utf8'))
+  } catch {
+    return false
+  }
+  if (!r || typeof r !== 'object' || r.v !== 1 || r.id !== id || r.kind !== kind || r.kid !== sha256hex(pub)) return false
+  try {
+    const canonical = JSON.stringify(['genesis-approval-v1', r.kind, r.id, r.by, r.at, r.scope, r.digest, r.kid, r.reason])
+    const key = createPublicKey({ key: pub, format: 'der', type: 'spki' })
+    if (!cryptoVerify('sha256', Buffer.from(canonical), { key, dsaEncoding: 'der' }, Buffer.from(String(r.sig), 'base64'))) return false
+  } catch {
+    return false
+  }
+  return r.digest === reviewedDigest(resolve(cwd, 'openspec'), id, kind, { scope: s.scope, need: s.need, reason: String(r.reason ?? '') })
+}
+
+/**
+ * The gate values that count in signed mode: whatever state.yaml says is ignored for approvals.
+ * @param {string} cwd @param {string} id @param {Buffer} pub @param {ReturnType<typeof parseState>} s
+ */
+function signedState(cwd, id, pub, s) {
+  const ok = (/** @type {string} */ k) => signedRecordValid(cwd, id, k, pub, s)
+  return {
+    ...s,
+    proposal: ok('proposal') ? 'approved' : 'pending',
+    implementation: ok('implementation') ? 'approved' : 'pending',
+    // `off` is a state.yaml value an agent could write; "design switched off" comes from the config (designGateOn).
+    design: ok('design') ? 'approved' : ok('design-waive') ? 'waived' : 'pending',
+    gate: s.scope === 'project' ? (ok('infra-accept') ? 'accepted' : 'pending') : s.gate,
+    seal: 'ok',
+  }
+}
+
+/** @param {string} cwd */
+function activeInitiatives(cwd, pinned = pinnedKey(cwd)) {
   const dir = resolve(cwd, 'openspec', 'changes')
   let names
   try {
@@ -568,7 +805,8 @@ function activeInitiatives(cwd) {
     const sp = join(dir, name, 'state.yaml')
     if (existsSync(sp)) {
       const text = readFileSync(sp, 'utf8')
-      out.push({ id: name, ...parseState(text), seal: sealStatus(cwd, name, text) })
+      const st = parseState(text)
+      out.push(pinned.mode === 'signed' ? { id: name, ...signedState(cwd, name, pinned.pub, st) } : { id: name, ...st, seal: sealStatus(cwd, name, text) })
     }
   }
   return out
@@ -728,7 +966,11 @@ function main() {
     // somewhere in one long line; and a command that first `cd`s to another project acts there.
     const actsHere = underDir(cwd, '.', shellBase(text, existsSync(callCwd) ? callCwd : root)) || text.includes(root)
     const opaqueHit = actsHere && prose.split(/&&|\|\||[;|\n]/).some((seg) => hasOpaqueWriter(seg) && mentionsProtected(seg))
-    if ((writesViaCode && protectedWriteInSource(source)) || opaqueHit) {
+    const hasProgram = hasInlineSource(prose) || programs.length > 0
+    // awk has no `-e`/`-c` flag, its program is the first argument: it can write with `print > file` or `system(...)`.
+    const awkWrites = /\b(?:awk|gawk|mawk|nawk)\b/.test(prose) && touchesOwnedArea(prose) && /[>|]|system\s*\(/.test(prose)
+    const unprovable = awkWrites || (hasProgram && inlineCodeUnprovable(source))
+    if ((writesViaCode && protectedWriteInSource(source)) || opaqueHit || unprovable) {
       block(
         'this command can change files through code the hook cannot read (an interpreter one-liner, a patch, a symlink,\n' +
           'a git restore) and it names a file Genesis owns (gate state, the decision ledger, the guard, its settings).\n' +
@@ -794,6 +1036,12 @@ function main() {
           'The agent cannot edit gate state directly — ask the person to sign in a terminal.',
       )
     }
+    if (/[\\/]approvals[\\/][\w-]+\.json$/.test(canon(filePath))) {
+      block(
+        'openspec approvals/ hold signatures made with the person\'s own key (Touch ID).\n' +
+          'The agent cannot write or replace them — ask the person to approve.',
+      )
+    }
     if (base === 'decisions.md') {
       block(
         'openspec decisions.md is written by `genesis decide` / `genesis reconcile`.\n' +
@@ -838,7 +1086,14 @@ function main() {
   }
 
   // 3. A code write. Gate it on the active initiatives if any exist.
-  const inits = activeInitiatives(cwd)
+  const pinned = pinnedKey(cwd)
+  if (pinned.mode === 'error') {
+    block(
+      `signed approvals are set up here but the key cannot be trusted: ${pinned.reason}.\n` +
+        'No code writes until a person fixes it (`genesis signing doctor`), because approvals cannot be verified.',
+    )
+  }
+  const inits = activeInitiatives(cwd, pinned)
   if (inits.length > 0) {
     const shared = inits.find((s) => s.scope === 'shared')
     if (shared) {

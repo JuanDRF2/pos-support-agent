@@ -1,40 +1,40 @@
 {
-  "genesisVersion": "0.30.1",
+  "genesisVersion": "0.35.1",
   "files": {
     ".genesis/guard/check.js": {
-      "version": "0.30.1",
-      "sha256": "8b219977c5cd999f75b18043bd9a12f8dd04ff5e61d56f1742bd87be2507d9b3"
+      "version": "0.35.1",
+      "sha256": "d5ed8f62c7b74576e083d22dab8497bbeab13e9d197050b6173c418f29e70e37"
     },
     ".genesis/guard/policy.js": {
-      "version": "0.30.1",
-      "sha256": "0efdff0bdc4dfa2cf815a9be8acc21da45d6517fcfc9fd6d4bfa325e7f6d2c3a"
+      "version": "0.35.1",
+      "sha256": "fbbbae168ba4a0eeddd1daf9bfd4cc1bc154195baa70baa108e56dff2c03d64f"
     },
     ".genesis/hooks/check-loop-contract.js": {
-      "version": "0.30.1",
-      "sha256": "ecd0cd699ef9e89d228757dd8704726457cd0edaa60f1bb699e5ea85db60ccfc"
+      "version": "0.35.1",
+      "sha256": "52bfb59dfaa6ed7a98863be04e07de5ec736fbe461490bda20534ac4e0b6e4b0"
     },
     ".genesis/ledger/genesis.js": {
-      "version": "0.30.1",
-      "sha256": "cc6dcc4528c0318a8168ae6ad1789ba965edd2c7b27ef72311fbae70a0f92aab"
+      "version": "0.35.1",
+      "sha256": "49d33156457d7100e0ed2bbe1e7cf1d613d0a7963be0cc9b8721a2968e692fc7"
     },
     ".genesis/well-architected/architecture.md": {
-      "version": "0.30.1",
+      "version": "0.35.1",
       "sha256": "fbba86ecdc9a65668bf472ad9437faca60a47b9d4092cfc2bd2b94f08030a9b1"
     },
     ".genesis/well-architected/cost.md": {
-      "version": "0.30.1",
+      "version": "0.35.1",
       "sha256": "cd67afe55629aa167e6bc5563191fb8f5b830729069beb8706659e764dce2e26"
     },
     ".genesis/well-architected/security.md": {
-      "version": "0.30.1",
+      "version": "0.35.1",
       "sha256": "4817de50d52fd995bf8d55ed006b9338fe4570bdaa6173dc1f5645c2e681aa5d"
     },
     ".claude/skills/genesis-design/SKILL.md": {
-      "version": "0.30.1",
+      "version": "0.35.1",
       "sha256": "54d409cb73f7bfbe9db6dc9684621d120ec4b5000d9107a7731d26d2e90b8292"
     },
     ".genesis/package.json": {
-      "version": "0.30.1",
+      "version": "0.35.1",
       "sha256": "3ca9d4afd21425087cf31893b8f9f63c81b0b8408db5e343ca76e5f8aa26ab9a"
     },
     "package.json": {
@@ -42,7 +42,7 @@
       "sha256": "7d186afcfa9a3b766cf68d6980f04e3e0ff30cca5f518eaa5ed2c13df648fabd"
     },
     "tsconfig.json": {
-      "version": "0.30.1",
+      "version": "0.35.1",
       "sha256": "1d500b00ac95e5ffb889f8c8129492a73e078ea4a84de13cf447f86743e41637"
     },
     "eslint.config.js": {
@@ -54,47 +54,47 @@
       "sha256": "669733105b70fc098ecc451e42eedc87d5dcf660b160e30fcac061a3551af59e"
     },
     ".claude/settings.json": {
-      "version": "0.30.1",
+      "version": "0.35.1",
       "sha256": "228002c42a34f8f86e04628db7bd82e79ebb4403a726384f015830238c80e926"
     },
     ".mcp.json": {
-      "version": "0.30.1",
+      "version": "0.35.1",
       "sha256": "e522e722c73cf3a6d15c6305c9b5c6a5cb99d91600787d2a2f8aa9a07bf9d85e"
     },
     ".claude/agents/genesis-architect.md": {
-      "version": "0.30.1",
+      "version": "0.35.1",
       "sha256": "63ba45c8fbf5d21ad503d4e08e850f5a88a87b5d866ec6b599fca677a0ffa5ac"
     },
     ".claude/agents/genesis-planner.md": {
-      "version": "0.30.1",
+      "version": "0.35.1",
       "sha256": "56b3ea52ccbdb13768ebe500833005e14c6e88fcf730a5076c26576235d8c1c7"
     },
     ".claude/agents/genesis-security.md": {
-      "version": "0.30.1",
+      "version": "0.35.1",
       "sha256": "232dcb867df6d91753a818adda65aaeea612e3b8b2c74b853a64c844d4e78014"
     },
     ".codex/config.toml": {
-      "version": "0.30.1",
+      "version": "0.35.1",
       "sha256": "f19e95b888888c86f55422468d146fb5ff4ff8440166b4bdc3b6eb89500b03dc"
     },
     ".codex/hooks.json": {
-      "version": "0.30.1",
+      "version": "0.35.1",
       "sha256": "6faa5de02179e9b207abba3569d2f6f9b4c21243e4aa143eddea6baa14f7dc27"
     },
     ".codex/agents/genesis-architect.toml": {
-      "version": "0.30.1",
+      "version": "0.35.1",
       "sha256": "42b161e9416b0ca41fd337d1e93261b807d5c636c90b3a45afa26c788c144542"
     },
     ".codex/agents/genesis-planner.toml": {
-      "version": "0.30.1",
+      "version": "0.35.1",
       "sha256": "e3c4ab157063f14bf63ee60fc4f3e5859d9bbf8a7d45ae4fe64c69a8b3fd16b2"
     },
     ".codex/agents/genesis-security.toml": {
-      "version": "0.30.1",
+      "version": "0.35.1",
       "sha256": "1d2d73a909f944bee670f711c2711b72f88d0469c6610cfa471777d7a18b866c"
     },
     "planning/README.md": {
-      "version": "0.30.1",
+      "version": "0.35.1",
       "sha256": "4a55dd755e7b128736caf1e7a5eb9bd109a690cba546224c8ba658860a696e68"
     },
     "planning/decisions.md": {
@@ -102,35 +102,35 @@
       "sha256": "a361c9d6dec1f31ebc549df38f3d50a388e0d86348df0e5bcf46ed661eccd1d3"
     },
     "planning/ai-issues.md": {
-      "version": "0.30.1",
+      "version": "0.35.1",
       "sha256": "616f6146e75a1fd6f20c91437948ba810c156c7e189586adb1c0516df64f02b0"
     },
     "planning/design/.gitkeep": {
-      "version": "0.30.1",
+      "version": "0.35.1",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "planning/imported/.gitkeep": {
-      "version": "0.30.1",
+      "version": "0.35.1",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "src/.gitkeep": {
-      "version": "0.30.1",
+      "version": "0.35.1",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "openspec/config.yaml": {
-      "version": "0.30.1",
+      "version": "0.35.1",
       "sha256": "0b8cc9a8ae55b8d3f4cf7bc47429cea879b04b7f17db7bd04ae2722b0ef8a176"
     },
     "openspec/specs/.gitkeep": {
-      "version": "0.30.1",
+      "version": "0.35.1",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "openspec/changes/.gitkeep": {
-      "version": "0.30.1",
+      "version": "0.35.1",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "openspec/changes/archive/.gitkeep": {
-      "version": "0.30.1",
+      "version": "0.35.1",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "AGENTS.md": {
@@ -138,7 +138,7 @@
       "sha256": "d24a2d5e71e382c066311c1cccf1f27025ffcec004768a3512937bb34177ddb8"
     },
     "CLAUDE.md": {
-      "version": "0.30.1",
+      "version": "0.35.1",
       "sha256": "336cc4fbf19beaada7ccf9986414fa91851a8d7a07dfb3ccbe800a69eed0ab49"
     }
   },

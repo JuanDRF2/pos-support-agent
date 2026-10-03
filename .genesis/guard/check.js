@@ -10,7 +10,7 @@
 //   block -> exit 2 + reason on stderr
 import { readFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
-import { commandText, decide, isGitPush, scanForSecrets, sensitiveFiles, secretsBlockMessage } from './policy.js'
+import { commandText, decide, isGitPush, parsePush, scanForSecrets, sensitiveFiles, secretsBlockMessage } from './policy.js'
 
 function readStdin() {
   try {
@@ -43,21 +43,72 @@ function pushRange() {
   return null
 }
 
-/** Scan what a push would send for secrets + sensitive files. Returns a block message, or
- *  null when nothing risky is found (or the diff can't be read — fail open). */
-function scanPushForSecrets() {
-  const range = pushRange()
-  const diff = git(range ? ['diff', '--no-color', '--unified=0', range] : ['diff', '--no-color', '--unified=0', 'HEAD'])
-  const names = git(range ? ['diff', '--name-only', range] : ['diff', '--name-only', 'HEAD'])
-  // Only the ADDED lines (`+`, not the `+++` file header) are new content leaving the machine.
-  const added = (diff || '')
+/** Added lines (`+`, not the `+++` header) out of a diff or `git log -p` text: the new content leaving the machine. @param {string} text */
+const addedLines = (text) =>
+  text
     .split('\n')
     .filter((l) => l.startsWith('+') && !l.startsWith('+++'))
     .map((l) => l.slice(1))
     .join('\n')
-  const findings = scanForSecrets(added)
-  const files = sensitiveFiles((names || '').split('\n').filter(Boolean))
+
+/**
+ * The revisions a push names, for `git log`: each refspec's source (a `+` only forces it), the
+ * current branch when it names none, every branch for `--all`, every tag for `--tags`.
+ * @param {ReturnType<typeof parsePush>} push
+ */
+function pushedRevs(push) {
+  const revs = []
+  for (const r of push?.refspecs ?? []) {
+    if (!r.src) continue // `:branch` deletes; nothing is sent
+    revs.push(r.src.includes('*') ? `--glob=${r.src}` : r.src)
+  }
+  if (push?.all) revs.push('--branches')
+  if (push?.tags) revs.push('--tags')
+  return revs.length ? revs : ['HEAD']
+}
+
+/**
+ * Everything reachable from the pushed refs, scanned in full. Used whenever the range a push would
+ * send cannot be trusted: no upstream to diff against, a forced refspec (the remote's history is
+ * about to be replaced, so "new since upstream" means nothing), or explicit refspecs, `--all` and
+ * `--tags`. A secret committed three commits ago and "removed" in the last one is still in every
+ * one of them. Returns the same shape as the range scan, or a block message when git cannot answer.
+ * @param {string[]} revs
+ */
+function scanFullHistory(revs) {
+  let r
+  try {
+    r = spawnSync('git', ['log', '-p', '--no-color', '--unified=0', '--pretty=format:', ...revs, '--'], { encoding: 'utf8', maxBuffer: 1024 * 1024 * 1024 })
+  } catch {
+    return 'the history to be pushed could not be read, so it cannot be scanned for secrets. Blocking.'
+  }
+  if (r.error) return 'the history to be pushed is too large or could not be read, so it cannot be scanned for secrets. Blocking.'
+  if (r.status !== 0) return null // not a repository, or nothing to push (no commits): nothing can leave
+  const out = String(r.stdout || '')
+  const names = out
+    .split('\n')
+    .filter((l) => l.startsWith('+++ b/'))
+    .map((l) => l.slice(6))
+  const findings = scanForSecrets(addedLines(out))
+  const files = sensitiveFiles([...new Set(names)])
   return findings.length || files.length ? secretsBlockMessage(findings, files) : null
+}
+
+/** Scan what a push would send for secrets + sensitive files. Returns a block message, or null when nothing risky is found. @param {string} command */
+function scanPushForSecrets(command) {
+  const push = parsePush(command)
+  const plain = !push || (push.refspecs.length === 0 && !push.all && !push.tags)
+  const forced = !!push && (push.force || push.refspecs.some((r) => r.force))
+  const range = pushRange()
+  // The cheap path is only sound when the push is a plain `git push` onto a known upstream.
+  if (range && plain && !forced && range.endsWith('..HEAD') && git(['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{upstream}'])) {
+    const diff = git(['diff', '--no-color', '--unified=0', range])
+    const names = git(['diff', '--name-only', range])
+    const findings = scanForSecrets(addedLines(diff || ''))
+    const files = sensitiveFiles((names || '').split('\n').filter(Boolean))
+    return findings.length || files.length ? secretsBlockMessage(findings, files) : null
+  }
+  return scanFullHistory(pushedRevs(push))
 }
 
 function main() {
@@ -86,7 +137,7 @@ function main() {
   // pushed. A positive detection BLOCKS; an unreadable git state fails open (never blocks).
   const command = commandText(payload?.tool_input)
   if (isGitPush(command)) {
-    const secretBlock = scanPushForSecrets()
+    const secretBlock = scanPushForSecrets(command)
     if (secretBlock) {
       process.stderr.write(`Genesis Guard blocked this push — ${secretBlock}\n`)
       process.exit(2)
