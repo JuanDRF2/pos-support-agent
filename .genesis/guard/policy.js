@@ -32,7 +32,7 @@ export const INFRA_GATE_MESSAGE = [
   '(see .genesis/well-architected/). Confirm only if the infra gate is satisfied.',
 ].join('\n')
 
-/** The org's confirmation UX, reused verbatim (brief §4.5). */
+/** The confirmation format shown with every `ask` (brief §4.5). */
 export const CONFIRMATION_FORMAT = [
   'About to make a write against a shared environment.',
   '',
@@ -51,6 +51,12 @@ export const CONFIRMATION_FORMAT = [
 /** Local / disposable targets — safe to write against. */
 const LOCAL_HOST =
   /\b(localhost|127\.0\.0\.1|0\.0\.0\.0|::1|[\w-]+\.local|[\w-]+\.localhost)\b/i
+
+/**
+ * A URL's host is local only if the WHOLE host is. `LOCAL_HOST` above matches inside free text,
+ * which is right there but wrong for a host: `localhost.evil.com` contains "localhost".
+ */
+const LOCAL_HOST_ONLY = /^(localhost|127\.0\.0\.1|0\.0\.0\.0|\[?::1\]?|[\w-]+\.local|[\w-]+\.localhost)(:\d+)?$/i
 
 /** Explicit shared-environment signals. */
 // TODO: replace with your own production/shared-environment domain(s) before relying on this for real protection
@@ -79,9 +85,9 @@ function extractHosts(cmd) {
 function classifyEnvironment(cmd) {
   const hosts = extractHosts(cmd)
   if (hosts.length) {
-    if (hosts.every((h) => LOCAL_HOST.test(h))) return 'local'
+    if (hosts.every((h) => LOCAL_HOST_ONLY.test(h))) return 'local'
     // Any shared or otherwise-unknown remote host → treat as shared.
-    if (hosts.some((h) => SHARED_HOST.test(h) || !LOCAL_HOST.test(h))) return 'shared'
+    if (hosts.some((h) => SHARED_HOST.test(h) || !LOCAL_HOST_ONLY.test(h))) return 'shared'
   }
   if (LOCAL_HOST.test(cmd) || DISPOSABLE.test(cmd)) return 'local'
   if (SHARED_HOST.test(cmd) || SHARED_ENV_WORD.test(cmd)) return 'shared'
@@ -314,6 +320,8 @@ function isRiskyWrite(cmd) {
 function isDangerTarget(t) {
   if (!t) return true
   if (t === '*' || t === '.' || t === './' || t === '..' || t === '../') return true
+  if (t === './*' || t === './.*' || t === '.*') return true // the whole working folder
+  if (/^(\.\/)?\.git\/?$/.test(t)) return true // the repository itself: all history
   if (t.includes('..')) return true // path traversal out of the project
   if (t.startsWith('$')) return true // env-expanded, unknown root
   if (t.startsWith('~')) return true // home directory
@@ -376,13 +384,53 @@ function isDangerousRmRf(cmd) {
   return false
 }
 
+/**
+ * `git` followed by its GLOBAL options, then a subcommand. `git -C . push` and `git -c k=v push`
+ * are the same push as `git push`; matching only the adjacent spelling let both skip the
+ * force-push block and the secret scan. Build the pattern for any subcommand with {@link gitCmd}.
+ */
+const GIT_GLOBALS = String.raw`(?:\s+(?:-C\s+\S+|-c\s+\S+|--[\w-]+(?:=\S+)?))*`
+/** @param {string} sub */
+const gitCmd = (sub) => new RegExp(String.raw`\bgit${GIT_GLOBALS}\s+${sub}\b`, 'i')
+const GIT_PUSH = gitCmd('push')
+
 /** @param {string} cmd */
 function isForcePushToProtected(cmd) {
-  if (!/\bgit\s+push\b/i.test(cmd)) return false
-  const forced =
-    /(--force\b|--force-with-lease\b|(?:^|\s)-f\b)/i.test(cmd) || /\s\+[\w/-]*\b(main|master)\b/i.test(cmd)
-  const toProtected = /\b(main|master)\b/i.test(cmd)
-  return forced && toProtected
+  // Judge each push on its own: a `-d` or a `main` elsewhere in the line (`git branch -d x`,
+  // `git checkout main`) belongs to another command and says nothing about this push.
+  return cmd.split(/&&|\|\||[;|\n]/).some((seg) => {
+    if (!GIT_PUSH.test(seg)) return false
+    const forced = /(--force\b|--force-with-lease\b|(?:^|\s)-f\b)/i.test(seg) || /\s\+[\w/-]*\b(main|master)\b/i.test(seg)
+    // Deleting a protected branch on the remote rewrites shared history just as a force does.
+    const deletes = /(?:^|\s)(--delete|-d)(?=\s)/i.test(seg) || /\s:(main|master)\b/i.test(seg)
+    return (forced || deletes) && /\b(main|master)\b/i.test(seg)
+  })
+}
+
+/**
+ * Commands that are neither unambiguously destructive nor ordinary: they throw away work that
+ * may not exist anywhere else, or run code nobody looked at. A human answers; with nobody to
+ * ask they are refused; the unattended loop is not stalled by the recoverable ones.
+ * @param {string} cmd
+ * @returns {string|null}
+ */
+function askReason(cmd) {
+  // A shell takes the script from stdin whatever its flags (`| sh -s -- --yes`); an interpreter only
+  // when it is given no script at all. `| python3 -c "..."` parses the download, it does not run it.
+  if (/\b(curl|wget|xh)\b[^\n]*\|\s*(?:sudo\s+)?(?:(?:ba|z|da|k)?sh\b|(?:python[\d.]*|node|perl|ruby)\s*(?:$|[;&|)\n]|-\s*(?:$|[;&|)\n])))/i.test(cmd)) {
+    return 'pipes a download straight into a shell or interpreter: it runs code nobody has read'
+  }
+  if (new RegExp(String.raw`\bgit${GIT_GLOBALS}\s+reset\b[^\n;&|]*--hard\b`, 'i').test(cmd)) {
+    return 'git reset --hard discards uncommitted work'
+  }
+  const clean = cmd.match(new RegExp(String.raw`\bgit${GIT_GLOBALS}\s+clean\b([^\n;&|]*)`, 'i'))
+  if (clean && /(?:^|\s)-[a-z]*f/i.test(clean[1]) && !/(?:^|\s)(-[a-z]*n|--dry-run)\b/i.test(clean[1])) {
+    return 'git clean -f deletes untracked files, including ones git cannot bring back'
+  }
+  if (new RegExp(String.raw`\bgit${GIT_GLOBALS}\s+(?:checkout\s+(?:--\s+)?|restore\s+(?!--staged)(?:--worktree\s+)?)\.(?:\s|$|[;&|])`, 'i').test(cmd)) {
+    return 'this overwrites every modified file in the working folder with the committed version'
+  }
+  return null
 }
 
 /**
@@ -572,6 +620,15 @@ export function decide(payload) {
     return { action: 'ask', reason: 'infrastructure provisioning — this is a gate', context: INFRA_GATE_MESSAGE }
   }
 
+  // 1c. Destroys unrecoverable work or runs unseen code → a human decides. Not "block": these
+  //     have legitimate uses. Autonomous mode auto-approves so the loop is not stalled.
+  const asked = askReason(command)
+  if (asked) {
+    if (autonomous()) return { action: 'allow', reason: `${asked} — auto-approved (autonomous mode)` }
+    if (nobodyToAsk(payload)) return { action: 'block', reason: `${asked}, and this session cannot ask a human` }
+    return { action: 'ask', reason: asked, context: `This command ${asked}. Confirm you want it.` }
+  }
+
   // 2. Non-mutating (reads, builds, tests, ...) → allow.
   if (!isRiskyWrite(command)) {
     return { action: 'allow', reason: 'read-only or non-mutating command' }
@@ -619,7 +676,7 @@ export function decide(payload) {
 
 /** True when the command pushes to a git remote. @param {string} cmd */
 export function isGitPush(cmd) {
-  return /\bgit\s+push\b/i.test(String(cmd || ''))
+  return GIT_PUSH.test(String(cmd || ''))
 }
 
 /**

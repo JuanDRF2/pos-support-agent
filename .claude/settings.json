@@ -5,13 +5,22 @@
   "permissions": {
     "defaultMode": "acceptEdits",
     "allow": [
-      "Bash(npm:*)",
-      "Bash(npx:*)",
-      "Bash(pnpm:*)",
-      "Bash(yarn:*)",
-      "Bash(node:*)",
-      "Bash(tsc:*)",
-      "Bash(git:*)"
+      "Bash(npm run *)",
+      "Bash(npm test*)",
+      "Bash(npm ci*)",
+      "Bash(npm install*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git branch*)",
+      "Bash(git switch *)",
+      "Bash(git checkout *)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)"
     ]
   },
   "hooks": {
@@ -21,7 +30,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .genesis/guard/check.js",
+            "command": "cd \"${CLAUDE_PROJECT_DIR:-.}\" && node .genesis/guard/check.js; rc=$?; [ \"$rc\" -eq 0 ] || exit 2",
             "timeout": 30
           }
         ]
@@ -31,7 +40,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .genesis/hooks/check-loop-contract.js",
+            "command": "cd \"${CLAUDE_PROJECT_DIR:-.}\" && node .genesis/hooks/check-loop-contract.js; rc=$?; [ \"$rc\" -eq 0 ] || exit 2",
             "timeout": 30
           }
         ]
