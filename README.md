@@ -1,4 +1,4 @@
-# POS Support Agent
+# POS Support Assistant
 
 A small support chat for merchants of a point-of-sale system. You ask a question ("how do I process a partial refund?"), it looks the answer up in three help articles, and it answers **from those articles only**. If the articles do not cover the question, it says so and suggests contacting support instead of guessing.
 
@@ -157,7 +157,7 @@ The full history of what was decided and measured, in plain language, is in `pla
 ## Project layout
 
 ```
-docs/kb/            the three help articles (the only knowledge the agent has)
+docs/kb/            the three help articles (the only knowledge the assistant has)
 src/rag/            chunker, local embedder, index store, ingest, retrieval
 src/agent/          prompt and refusal logic, Ollama client, the pipeline
 src/server/         local web server and the chat page

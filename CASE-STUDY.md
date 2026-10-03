@@ -1,12 +1,13 @@
-# Case Study: Building a Support Agent I Could Actually Trust
+# Case Study: Building a Support Assistant I Could Actually Trust
 
 ## The problem I was actually solving
 
 Four years into product management, I kept running into the same requirement in the AI product
-roles I was targeting: a shipped agentic-AI artifact. Job descriptions asked for a "shipped agentic
+roles I was targeting: a shipped AI artifact with retrieval and evals. Job descriptions asked for a "shipped agentic
 AI product in production," for "AI/ML-native product work: RAG, semantic search," and for "deep
 LLM/agent-memory systems fluency." That's not a seniority gap or a communication gap. It's a
-specific, nameable thing I hadn't built yet.
+specific, nameable thing I hadn't built yet. This project covers the retrieval and evaluation part of that
+requirement: it is a RAG assistant, not an agent with tool use, and it is not deployed.
 
 So I built it, but I didn't want to build a demo that just *looked* like it worked. I wanted to
 build something I'd actually trust, and the only way to know if I trusted it was to test it hard
@@ -15,7 +16,7 @@ enough to find out where it didn't hold up.
 ## What it is
 
 A support chat for a POS (point-of-sale) product. A merchant asks a question (how to process a
-partial refund, how to renew a subscription, how to gift a renewal) and the agent answers from
+partial refund, how to renew a subscription, how to gift a renewal) and the assistant answers from
 three help articles I wrote using actual retrieval-augmented generation (RAG), not a scripted FAQ
 bot. It runs entirely on my own machine: local embeddings for retrieval, a local model (Ollama)
 for generation, no paid or keyed API of any kind. The full build (architecture, setup, source) is
@@ -92,7 +93,7 @@ what changes, not a hand-wave:
   articles need an actual vector database, and retrieval tuning becomes its own project at that
   size, not a threshold I calibrated by hand on 23 questions.
 - **Account-specific answers need account-specific data.** "What's the status of my refund"
-  requires the agent to safely query the real order system for that specific merchant, with proper
+  requires the assistant to safely query the real order system for that specific merchant, with proper
   access control and audit logging, which is a different (and much higher-stakes) problem than
   answering from a static help article.
 - **The model choice gets re-evaluated under real load.** A local 3B model on my laptop was the
