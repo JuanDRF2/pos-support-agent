@@ -119,7 +119,7 @@ Result: OK
 ```
 
 - **The one miss:** for "Can I refund an order from six weeks ago in the POS?" the model correctly explains the 30-day rule but leaves out that older orders go through general support.
-- **Speed:** across four full runs the average was between 6.7 s and 10.5 s per question, and the slowest between 15.2 s and 28.1 s. A full answer takes several seconds; the page shows "thinking..." meanwhile. Asking again after the model has been idle for a few minutes is slower, because Ollama has to load it again.
+- **Speed:** across four full runs the average was between 6.7 s and 10.5 s per question, and the slowest between 15.2 s and 28.1 s (the runs are logged in `planning/decisions.md`, Task 12). A full answer takes several seconds; the page shows "thinking..." meanwhile. Asking again after the model has been idle for a few minutes is slower, because Ollama has to load it again.
 - **Section retrieval:** the section that answers "a customer wants money back for one item of a multi-item order" is found, but second, behind "Issuing a Full Refund" (0.42 against 0.40, almost a tie).
 
 ### How to read these numbers

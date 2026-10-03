@@ -69,14 +69,14 @@ else got left out.
 
 A real `npm test` run, not a cherry-picked one:
 
-| Category | All questions (15 answerable, 23 in total) | Held-out (6, never used to tune anything) | Pass mark |
+| Category | All questions (15 answerable, 23 in total) | Held-out (6, not used to choose the prompt or the threshold, but looked at several times) | Pass mark |
 |---|---|---|---|
 | Retrieval (correct section, not just correct document) | 15/15 (100%) | 4/4 | 90% |
 | Faithfulness (cites the source, invents nothing) | 14/15 (93%) | 3/4 | 85% |
 | Correct refusal | 23/23 (100%) | 6/6 | 95% |
 
-Zero `npm audit` vulnerabilities. Zero paid or keyed API anywhere in the code, confirmed with a
-repo search, not just a claim. 103 unit tests. To reproduce: install, ingest and test with the
+Zero `npm audit` vulnerabilities. No paid or keyed API anywhere in the code: when it was built, a search of the repo for
+hosted-service calls and API keys found none (that check is not stored as a script). 103 unit tests. To reproduce: install, ingest and test with the
 commands in the README (the tests need Ollama running locally).
 
 ## What it would take to run this on a real POS
