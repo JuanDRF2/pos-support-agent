@@ -3,11 +3,15 @@
   "files": {
     ".genesis/guard/check.js": {
       "version": "0.37.0",
-      "sha256": "d5ed8f62c7b74576e083d22dab8497bbeab13e9d197050b6173c418f29e70e37"
+      "sha256": "0f628bb502f2c92d1205aa6b3b31f978bf347532f56f8f7df87a9ecfcab4b2dc"
+    },
+    ".genesis/guard/hardening.js": {
+      "version": "0.37.0",
+      "sha256": "d71dc793499428e0c4ccfa5e7fedb7ad0c58305f0eaa44718d4ed974d0236f6f"
     },
     ".genesis/guard/policy.js": {
       "version": "0.37.0",
-      "sha256": "ea4772596141a516e04db8ccc22d4f5e33eae054a97af1b0bcd0541c3816e737"
+      "sha256": "7495964a4132668634af7bba2da624f0d92307cfa2303088bf35183e91a23080"
     },
     ".genesis/hooks/check-loop-contract.js": {
       "version": "0.37.0",
@@ -15,7 +19,7 @@
     },
     ".genesis/ledger/genesis.js": {
       "version": "0.37.0",
-      "sha256": "14ed704bfb9f238df4a6a0265460f00d58cbd981625b0df09f9aacff4f4f1944"
+      "sha256": "530aa70cdf9c053cd733f296867296c32697992d88b48802fb23a0f20e15b944"
     },
     ".genesis/well-architected/architecture.md": {
       "version": "0.37.0",

@@ -3283,8 +3283,14 @@ var SECRET_PATTERNS = [
   ["Slack webhook", /https:\/\/hooks\.slack\.com\/services\/[A-Za-z0-9/_-]+/],
   ["Google API key", /\bAIza[0-9A-Za-z_-]{35}\b/],
   ["Stripe secret key", /\b(?:sk|rk)_live_[0-9A-Za-z]{24,}\b/],
-  ["JSON Web Token", /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{6,}\b/]
+  ["JSON Web Token", /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{6,}\b/],
+  ["SendGrid API key", /\bSG\.[A-Za-z0-9_-]{16,}\.[A-Za-z0-9_-]{16,}\b/],
+  ["Telegram bot token", /\b\d{8,10}:AA[A-Za-z0-9_-]{33}\b/],
+  ["Bearer token", /\bBearer\s+[A-Za-z0-9._~+/=-]{24,}/]
 ];
+var URL_CREDENTIAL = /\b[a-z][a-z0-9+.-]*:\/\/[^\s:@/]+:([^\s@/]{3,})@[^\s/]+/gi;
+var PLACEHOLDER_PASSWORD = /^(password|pass|passwd|pwd|secret|user|username|test|admin|root|changeme|example|xxx+|\*+|\$\{?\w+\}?|<[^>]+>)$/i;
+var ENV_REFERENCE_LINE = /(\$\{?[A-Za-z_]|process\.env|os\.(environ|getenv)|import\.meta\.env|<[^>]+>|\{\{)/;
 var NOT_A_SECRET = /(\$\{?[A-Za-z_]|process\.env|os\.(environ|getenv)|import\.meta\.env|<[^>]+>|\{\{|example|placeholder|change[-_ ]?me|your[-_ ]?|xxxx|\*{3,}|redacted|dummy|sample|fake|todo|none|null|undefined)/i;
 var SECRET_ASSIGNMENT = /\b(pass(?:word|wd)?|secret|api[_-]?key|apikey|access[_-]?token|auth[_-]?token|client[_-]?secret|private[_-]?key|db[_-]?pass(?:word)?|encryption[_-]?key)\b\s*[:=]\s*["']?([^\s"'`]{6,})/i;
 var CREDENTIAL_VALUE = /^[A-Za-z0-9_\-+/=]{6,}$/;
@@ -3308,9 +3314,14 @@ function scanForSecrets(text2) {
     let m;
     while (m = g.exec(src)) add(label, m[0]);
   }
+  let u;
+  const urlRe = new RegExp(URL_CREDENTIAL.source, URL_CREDENTIAL.flags);
+  while (u = urlRe.exec(src)) {
+    if (!PLACEHOLDER_PASSWORD.test(u[1]) && !NOT_A_SECRET.test(u[1])) add("URL with a password", u[1]);
+  }
   for (const line of src.split("\n")) {
     const m = SECRET_ASSIGNMENT.exec(line);
-    if (m && CREDENTIAL_VALUE.test(m[2]) && !NOT_A_SECRET.test(m[2]) && !NOT_A_SECRET.test(line)) {
+    if (m && CREDENTIAL_VALUE.test(m[2]) && !NOT_A_SECRET.test(m[2]) && !ENV_REFERENCE_LINE.test(line)) {
       add("hardcoded credential", m[2]);
     }
   }

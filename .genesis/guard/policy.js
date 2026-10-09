@@ -10,9 +10,29 @@
 // default — customize SHARED_HOST below for your own production domains. The
 // MECHANISM is Genesis's own, deliberately simple — no per-repo route-profile
 // system, so unknown targets default to "shared" and reads are allowed.
+//
+// Since 0.38 the hardening checks of the workspace guard lineage live next to this file in
+// hardening.js (shell-aware git push parsing, keychain / ~/.ssh reads, commands hidden behind
+// variables, the guard's own files) and are applied here ADDITIVELY: they only ever add a
+// block or an ask, they never turn one of this file's narrower rules into a wider one.
+// See docs/guard-port-plan-2026-10-09.md for every difference and the rule used to settle it.
+
+import {
+  parsePush as parsePushShell,
+  pushVerdict,
+  readsSecretFile as readsSecretFileTokens,
+  inlineSourceTouchesSecret,
+  hiddenOrBulkReason,
+  mentionsGuardPath,
+  EXTRA_MUTATION_SIGNAL,
+  inlineInterpreterTouchesGuard,
+  splitSegments,
+  tokenize,
+  programAndArgs,
+} from './hardening.js'
 
 /**
- * @typedef {{ tool_name?: string, tool_input?: { command?: string } }} PreToolUsePayload
+ * @typedef {{ tool_name?: string, cwd?: string, permission_mode?: string, tool_input?: { command?: string | string[] } }} PreToolUsePayload
  * @typedef {{action:'allow', reason:string}
  *   | {action:'ask', reason:string, context:string}
  *   | {action:'block', reason:string}} Decision
@@ -603,6 +623,52 @@ function stripHeredocBodies(cmd) {
   )
 }
 
+/**
+ * The command as the guard reads it for push detection: heredoc bodies and inline interpreter source removed, because
+ * they are text or foreign code, not shell. A commit message or a script that merely mentions a push is not one.
+ * @param {string} cmd
+ */
+export function analysisText(cmd) {
+  return stripInlineInterpreterSource(stripHeredocBodies(String(cmd || '')))
+}
+
+/** The reason shown when the shell would read a credentials file that only the hardening reader noticed. */
+const SECRET_READ_MESSAGE =
+  'reads a credentials file (a private key, ~/.ssh, a Keychain password or .env*): its contents would enter the conversation. Ask the person to run it, or to tell you which variable names you need'
+
+// --- The guard's own files, touched through the shell ------------------------------------------------
+
+const GUARD_TAMPER_REASON =
+  "this touches the guard's own files (the guard hooks, check-loop-contract, or a settings / MCP wiring file): editing, replacing, or deleting them disables enforcement for every future call; ask the person to change it by hand"
+
+/** Any command shape that would change what is on disk at a path, as opposed to just reading it. */
+const MUTATION_SIGNAL = /\b(rm|unlink|mv|cp|truncate|tee)\b|>{1,2}|\bsed\b[^|&;\n]*-i\b/i
+
+/**
+ * Redirects that only ever move one stream to another (or to the void): `2>&1`, `>&2`, `2>/dev/null`. They are
+ * everywhere on read-only commands, so they are removed before the mutation scan; any other `>` is still seen.
+ */
+const SAFE_STREAM_REDIRECT = /\d?>&\d\b|\b\d?>\s*\/dev\/null\b/g
+
+/**
+ * True when the command names one of the guard's own files AND carries a mutation signal anywhere, or when inline
+ * interpreter source names a guard path. Deliberately approximate (the same style as the rest of this file), so it has
+ * known false positives: a mutation word inside a quoted pattern, `->` in a string, a path written as data. They are
+ * listed in tests/guard-corpus/known-false-positives.json and may only go down. Message values (`-m "..."`) are
+ * blanked first, which is why a commit message that names a settings file passes.
+ * The Genesis gate hook (assets/hooks/check-loop-contract.js) protects the same files structurally; this is the second layer.
+ * @param {string} cmd the command with heredoc bodies and inline source removed
+ * @param {string} rawCommand the command as typed
+ * @param {string} cwd the working directory the hook payload reports
+ */
+function isGuardTamper(cmd, rawCommand, cwd) {
+  if (inlineInterpreterTouchesGuard(rawCommand, cwd)) return true
+  const text = blankMessageValues(cmd)
+  const forMutationCheck = text.replace(/<(?:inline-source|heredoc-body)-omitted>/g, '').replace(SAFE_STREAM_REDIRECT, '')
+  const mentions = mentionsGuardPath(text) || mentionsGuardPath(cwd)
+  return mentions && (MUTATION_SIGNAL.test(forMutationCheck) || EXTRA_MUTATION_SIGNAL.test(forMutationCheck))
+}
+
 /** Placeholder tenant values must never persist against a shared env (§4.5). */
 const PLACEHOLDER_TENANT =
   /\b(tenant|customer|account|org|client|company)\s*[=:]\s*["']?(test|demo|placeholder|example|dummy|sample|foo|bar|changeme)\b/i
@@ -698,15 +764,27 @@ export function decide(payload) {
   const rawCommand = commandText(payload?.tool_input)
   if (!rawCommand.trim()) return { action: 'allow', reason: 'empty command' }
   const command = stripInlineInterpreterSource(stripHeredocBodies(rawCommand))
+  const cwd = String(payload?.cwd ?? '')
+
+  // 0a. The guard's own files (hooks, settings, MCP wiring) touched through the shell: refused in
+  //     every mode. Disabling the guard disables every later check, so this runs first.
+  if (isGuardTamper(command, rawCommand, cwd)) return { action: 'block', reason: GUARD_TAMPER_REASON }
 
   // 0. A credentials file read through the shell: refused in every mode. Looked at on the raw
   //    line, because the inline source below is exactly where `open('.env')` would hide.
+  //    Two readers, either one blocks: this file's (variables, globs, heredoc programs) and the
+  //    hardening one (tokenised: ~/.ssh, .netrc, the Keychain, quoted spellings).
   const secretRead = readsSecretFile(rawCommand)
   if (secretRead) return { action: 'block', reason: secretRead }
+  if (readsSecretFileTokens(command) || inlineSourceTouchesSecret(rawCommand)) return { action: 'block', reason: SECRET_READ_MESSAGE }
 
   // 1. Unambiguously destructive → block, regardless of environment.
   const destructive = destructiveReason(command)
   if (destructive) return { action: 'block', reason: destructive }
+  //    The shell-aware push verdict: a mirror push, or a force / delete aimed at main or master,
+  //    under any spelling (`git -C x push`, `git "push"`, `FOO=1 git push`).
+  const pushCheck = pushVerdict(parsePushShell(command))
+  if (pushCheck?.action === 'block') return { action: 'block', reason: pushCheck.reason }
 
   // 1b. Infrastructure provisioning → a gate (ask), surfaced regardless of env. In autonomous
   //     mode it auto-approves so the IDE loop isn't blocked on a prompt.
@@ -726,7 +804,11 @@ export function decide(payload) {
 
   // 1c. Destroys unrecoverable work or runs unseen code → a human decides. Not "block": these
   //     have legitimate uses. Autonomous mode auto-approves so the loop is not stalled.
-  const asked = askReason(command)
+  //     Also asked: deleting a remote branch or tag (a push that only deletes asks, it is never
+  //     silent) and a command whose real name is hidden behind a variable, `eval` or `find -delete`.
+  //     A force-push of a branch that is not main/master is deliberately NOT asked here: it is a
+  //     routine step after a rebase and the secret scan still reads its full history.
+  const asked = askReason(command) ?? (pushCheck?.action === 'ask' && /delet/.test(pushCheck.reason) ? pushCheck.reason : null) ?? hiddenOrBulkReason(command)
   if (asked) {
     if (autonomous()) return { action: 'allow', reason: `${asked} — auto-approved (autonomous mode)` }
     if (nobodyToAsk(payload)) return { action: 'block', reason: `${asked}, and this session cannot ask a human` }
@@ -778,9 +860,85 @@ export function decide(payload) {
 // send and BLOCKS when it finds exposed credentials or sensitive files. The patterns are
 // pure + unit-tested here; check.js does the git plumbing (the diff to be pushed).
 
-/** True when the command pushes to a git remote. @param {string} cmd */
+/** Quoted text and comments are words the shell does not run; what is left is what it might. @param {string} text */
+function bareWords(text) {
+  let out = ''
+  let quote = ''
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i]
+    if (quote) {
+      if (ch === '\\' && quote === '"') i++
+      else if (ch === quote) quote = ''
+      continue
+    }
+    if (ch === '\\') {
+      out += ch + (text[++i] ?? '')
+      continue
+    }
+    if (ch === '"' || ch === "'") {
+      quote = ch
+      continue
+    }
+    if (ch === '#' && (i === 0 || /\s/.test(text[i - 1]))) {
+      while (i < text.length && text[i] !== '\n') i++
+      out += '\n'
+      continue
+    }
+    out += ch
+  }
+  return out
+}
+
+const SHELL_PROGRAMS = new Set(['bash', 'sh', 'zsh', 'dash', 'ksh'])
+
+/** The script text a segment hands to a shell (`bash -c "..."`, `eval "..."`), or null. @param {string} segment */
+function shellScriptOf(segment) {
+  const { program, args } = programAndArgs(tokenize(segment))
+  const prog = String(program).split('/').pop() ?? ''
+  if (prog === 'eval') return args.join(' ') || null
+  if (!SHELL_PROGRAMS.has(prog)) return null
+  const c = args.findIndex((a) => /^-[a-z]*c$/.test(a))
+  return c >= 0 && args[c + 1] !== undefined ? args[c + 1] : null
+}
+
+/** @param {string} text @param {number} depth @returns {ReturnType<typeof parsePushShell>} */
+function pushIn(text, depth) {
+  const direct = parsePushShell(text)
+  if (direct) return direct
+  if (depth >= 3) return null
+  for (const segment of splitSegments(text)) {
+    const script = shellScriptOf(segment)
+    const inner = script ? pushIn(analysisText(script), depth + 1) : null
+    if (inner) return inner
+  }
+  return null
+}
+
+/**
+ * The `git push` a command line contains, in the shell-aware shape of hardening.js (`dir`, `refspecs` as text,
+ * `deleteFlag`...), or null. Three layers, so a push is not missed because of how it is spelled:
+ *   1. the shell-aware parser (`git -C dir "push"`, `FOO=1 git push`, `cd dir && git push`);
+ *   2. the same parser inside `bash -c "..."` / `eval "..."` scripts;
+ *   3. the plain-text rule on what is left once quoted text and comments are removed (`if x; then git push; fi`,
+ *      `(git push)`), so a push is still scanned when the parser cannot place it. A mere mention in a
+ *      quoted string, a comment or a heredoc is not a push.
+ * @param {string} cmd
+ * @returns {ReturnType<typeof parsePushShell>}
+ */
+export function findPush(cmd) {
+  const text = analysisText(cmd)
+  const shaped = pushIn(text, 0)
+  if (shaped) return shaped
+  const bare = bareWords(text)
+  const legacy = parsePush(bare)
+  if (!legacy) return null
+  const refspecs = legacy.refspecs.map((r) => `${r.force ? '+' : ''}${r.src}${r.dst && r.dst !== r.src ? `:${r.dst}` : ''}`)
+  return { dir: '', force: legacy.force, forceFlag: legacy.force, mirror: legacy.mirror, deleteFlag: false, all: legacy.all, tags: legacy.tags, remote: legacy.remote, refspecs }
+}
+
+/** True when the command pushes to a git remote, however it is spelled. @param {string} cmd */
 export function isGitPush(cmd) {
-  return GIT_PUSH.test(String(cmd || ''))
+  return findPush(cmd) !== null
 }
 
 /**
@@ -799,7 +957,19 @@ const SECRET_PATTERNS = [
   ['Google API key', /\bAIza[0-9A-Za-z_-]{35}\b/],
   ['Stripe secret key', /\b(?:sk|rk)_live_[0-9A-Za-z]{24,}\b/],
   ['JSON Web Token', /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{6,}\b/],
+  ['SendGrid API key', /\bSG\.[A-Za-z0-9_-]{16,}\.[A-Za-z0-9_-]{16,}\b/],
+  ['Telegram bot token', /\b\d{8,10}:AA[A-Za-z0-9_-]{33}\b/],
+  ['Bearer token', /\bBearer\s+[A-Za-z0-9._~+/=-]{24,}/],
 ]
+
+/** A URL with a user and a password in it (a postgres URL with user:password before the host): capture the password. */
+const URL_CREDENTIAL = /\b[a-z][a-z0-9+.-]*:\/\/[^\s:@/]+:([^\s@/]{3,})@[^\s/]+/gi
+
+/** Passwords that are obviously placeholders in a documentation URL. */
+const PLACEHOLDER_PASSWORD = /^(password|pass|passwd|pwd|secret|user|username|test|admin|root|changeme|example|xxx+|\*+|\$\{?\w+\}?|<[^>]+>)$/i
+
+/** A line that reads the value from the environment or a template, so it holds no literal secret. */
+const ENV_REFERENCE_LINE = /(\$\{?[A-Za-z_]|process\.env|os\.(environ|getenv)|import\.meta\.env|<[^>]+>|\{\{)/
 
 /** Values that are clearly NOT real secrets — env references, placeholders, masks. */
 const NOT_A_SECRET =
@@ -841,10 +1011,16 @@ export function scanForSecrets(text) {
     let m
     while ((m = g.exec(src))) add(label, m[0])
   }
-  // Assignment form — line by line, skipping placeholders / env refs / code expressions.
+  let u
+  const urlRe = new RegExp(URL_CREDENTIAL.source, URL_CREDENTIAL.flags)
+  while ((u = urlRe.exec(src))) {
+    if (!PLACEHOLDER_PASSWORD.test(u[1]) && !NOT_A_SECRET.test(u[1])) add('URL with a password', u[1])
+  }
+  // Assignment form — line by line. Only the VALUE is checked for placeholder words, so a trailing
+  // "# example" on the same line does not hide a real secret; env and template references still do.
   for (const line of src.split('\n')) {
     const m = SECRET_ASSIGNMENT.exec(line)
-    if (m && CREDENTIAL_VALUE.test(m[2]) && !NOT_A_SECRET.test(m[2]) && !NOT_A_SECRET.test(line)) {
+    if (m && CREDENTIAL_VALUE.test(m[2]) && !NOT_A_SECRET.test(m[2]) && !ENV_REFERENCE_LINE.test(line)) {
       add('hardcoded credential', m[2])
     }
   }
@@ -862,7 +1038,9 @@ export function sensitiveFiles(paths) {
     if (/^id_(rsa|dsa|ecdsa|ed25519)$/i.test(base)) return true
     if (/\.(pem|p12|pfx|keystore|jks)$/i.test(base)) return true
     if (/^credentials(\.json)?$/i.test(base) || /^service-account.*\.json$/i.test(base)) return true
-    if (base === '.npmrc' || base === '.pypirc') return true
+    if (base === '.npmrc' || base === '.pypirc' || base === '.netrc' || base === '.git-credentials') return true
+    if (/^secrets?\.(json|ya?ml)$/i.test(base)) return true
+    if (base === 'signing-key.blob' || base === 'seal.key') return true
     return false
   })
 }
