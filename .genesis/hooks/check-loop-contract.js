@@ -71,7 +71,9 @@ function canon(p) {
   } catch {
     /* keep the lexical path */
   }
-  return join(real, ...tail).toLowerCase()
+  // Up then down: a plain toLowerCase leaves the long s (U+017F) alone, and a Mac disk treats it as an s, so
+  // `hookſ` IS `hooks` there. Going through upper case folds it. Over-blocking a look-alike is fine.
+  return join(real, ...tail).toUpperCase().toLowerCase()
 }
 
 /**

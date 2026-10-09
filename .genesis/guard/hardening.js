@@ -392,7 +392,8 @@ export const GUARD_PREFIXES = [
 
 /** @param {string} text */
 export function mentionsGuardPath(text) {
-  const t = String(text || '').replace(/\\/g, '/').toLowerCase()
+  // Up then down so look-alike letters that a Mac disk treats as the same name (the long s) are folded too.
+  const t = String(text || '').replace(/\\/g, '/').toUpperCase().toLowerCase()
   if (GUARD_PREFIXES.some((p) => t.includes(p))) return true
   // The hooks folder itself (`rm -rf .claude/hooks`, `mv .claude/hooks/ x`)
   return /\.claude\/hooks\/?(?=[\s"')]|$)/.test(t)
