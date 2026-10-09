@@ -445,10 +445,12 @@ export function parsePush(cmd) {
 
 /**
  * Files whose contents are credentials: `.env` and `.env.<anything but example/sample/template/dist>`
- * at any depth, and Genesis's seal key. Matched as a whole path component, so `process.env.X` and
- * `.envrc` are not it.
+ * at any depth, Genesis's seal key and signing-key handle, SSH private keys under their usual names
+ * (`id_rsa`, `id_ed25519`, ... but not the `.pub` file) and certificate or key stores (`.pem`, `.p12`,
+ * `.pfx`, `.jks`, `.keystore`). Matched as a whole path component, so `process.env.X` and `.envrc` are
+ * not it. A key kept under an unusual name is not caught.
  */
-const SECRET_FILE = /(?:^|[\s"'=@<(/:])(?:[\w.~${}-]*\/)*(?:\.env(?:\.(?!(?:example|sample|template|dist)\b)[\w.-]+)?|seal\.key)(?=$|[\s"';|&)<>`])/i
+const SECRET_FILE = /(?:^|[\s"'=@<(/:])(?:[\w.~${}-]*\/)*(?:\.env(?:\.(?!(?:example|sample|template|dist)\b)[\w.-]+)?|seal\.key|signing-key\.blob|id_(?:rsa|dsa|ecdsa|ed25519)|[\w-]+\.(?:pem|p12|pfx|jks|keystore))(?=$|[\s"';|&)<>`])/i
 
 /** A glob that can expand to `.env` or `.env.local` (`.e*`, `.en?`, `.env*`). A bare `.*` is not matched: it is everywhere in grep/jq patterns. */
 const SECRET_GLOB = /(?:^|[\s"'=@<(/:])(?:[\w.~${}-]*\/)*\.(?:e|en|env)[*?[]/
@@ -483,7 +485,7 @@ function readsSecretFile(cmd) {
   for (const m of unquoted.matchAll(/(?:^|[\s;&|])([A-Za-z_]\w*)=(["']?)([^\s"';&|]+)\2/g)) vars.set(m[1], m[3])
   const text = vars.size ? unquoted.replace(/\$\{?([A-Za-z_]\w*)\}?/g, (whole, name) => vars.get(name) ?? whole) : unquoted
   if (!SECRET_FILE.test(text) && !SECRET_GLOB.test(text)) return null
-  const MSG = 'reads a credentials file (.env* or the seal key): its contents would enter the conversation. Ask the person to run it, or to tell you which variable names you need'
+  const MSG = 'reads a credentials file (.env*, a private key or the seal key): its contents would enter the conversation. Ask the person to run it, or to tell you which variable names you need'
   // A heredoc fed to an interpreter is a program: naming the file anywhere in it is reading it.
   for (const m of text.matchAll(/^[^\n]*\b(?:python[\d.]*|node|deno|bun|ruby|perl|php|lua|osascript)\b[^\n]*<<-?\s*(['"]?)([A-Za-z_][\w-]*)\1[^\n]*\r?\n([\s\S]*?)\r?\n[ \t]*\2(?=\s|$)/gm)) {
     if (SECRET_FILE.test(m[3])) return MSG

@@ -2,7 +2,7 @@
 
 // src/initiatives/bin.ts
 import { basename, isAbsolute as isAbsolute4, join as join21 } from "node:path";
-import { existsSync as existsSync20, mkdirSync as mkdirSync11, readFileSync as readFileSync18, readdirSync as readdirSync9, rmSync as rmSync4, writeFileSync as writeFileSync12 } from "node:fs";
+import { existsSync as existsSync20, mkdirSync as mkdirSync11, readFileSync as readFileSync18, readdirSync as readdirSync10, rmSync as rmSync4, writeFileSync as writeFileSync12 } from "node:fs";
 import { homedir as homedir5, userInfo } from "node:os";
 import { spawnSync as spawnSync9 } from "node:child_process";
 import { createInterface } from "node:readline/promises";
@@ -24,7 +24,7 @@ import { join } from "node:path";
 // src/i18n/helper.ts
 var es = {
   // ── help ────────────────────────────────────────────────────────────────────
-  "helper.usage": 'genesis \u2014 registro de iniciativas\n\n  genesis change new "<t\xEDtulo>"          crea una iniciativa nueva\n  genesis ingest <spec.json>             importa una Build-Ready Spec a una iniciativa ya armada\n  genesis board                          lista las iniciativas y el estado de sus firmas, infra y dise\xF1o\n  genesis validate [id]                  revisa que la carpeta de cada iniciativa sea coherente (estado, firmas, specs, enlaces)\n  genesis decide <id> "<qu\xE9>"            registra una decisi\xF3n (DEC-*) y marca como desactualizado lo que afecta (--affects a,b --supersedes DEC-x --why t --rejected "opci\xF3n: raz\xF3n" --breaks-at t --evidence f1,f2)\n  genesis check [<n> <A|B|C>]            comprobaci\xF3n de lectura de docs/HOW-IT-WORKS.md: muestra la siguiente pregunta (3 opciones) o la responde con una letra\n  genesis sign                           firma docs/HOW-IT-WORKS.md como le\xEDdo; se rechaza hasta aprobar todos los puntos de control\n  genesis signing <setup|status|adopt>   firmas con huella (Touch ID): activa las aprobaciones firmadas, muestra su estado o re-firma lo ya aprobado\n  genesis how-it-works [--no-llm]        genera docs/HOW-IT-WORKS.md desde el registro de decisiones (el modelo solo trabaja en las decisiones que cambiaron)\n  genesis manual [--no-llm]              manual en lenguaje sencillo (encabezados fijos): secciones del registro y puntos del README con citas verificadas\n  genesis backfill propose --into <id>   propone decisiones a partir del historial escrito del proyecto (citas verificadas); luego: backfill apply --accept 1,3\n  genesis cards-draft                    prepara borradores de tarjetas de estudio de Product Brain (card-v1) desde el registro de decisiones, en docs/cards-draft/\n  genesis reconcile <id> <artefacto>     quita la marca de desactualizado despu\xE9s de poner el artefacto al d\xEDa\n  genesis judge <id>                     veredicto adversarial de preparaci\xF3n sobre el paquete de specs (PASS / PASS WITH OBSERVATIONS / FAIL)\n  genesis verify                         corre las validaciones del proyecto (typecheck/lint/test/build): la autocomprobaci\xF3n del loop\n  genesis review                         revisa solo el diff del \xE1rbol de trabajo (c\xF3digo y seguridad): hallazgos; lo obligatorio bloquea\n  genesis loop [archivo-de-tareas]       reparte las tareas en trabajos aislados en worktrees, autoverificados y autorrevisados\n  genesis gate approve <id> <firma>      aprueba una firma (proposal | implementation | design): INTERACTIVO\n  genesis seal <id>                      vuelve a sellar las firmas de una iniciativa despu\xE9s de que revisaste un state.yaml cambiado fuera de genesis: INTERACTIVO\n  genesis gate waive <id> design --reason "<por qu\xE9>"   omite la firma de dise\xF1o cuando nadie puede producir pantallas (una decisi\xF3n humana que queda registrada)\n  genesis infra set <id> <alcance>       registra el alcance de infraestructura ({scopes})\n  genesis infra accept <id>              acepta la firma de infraestructura de un alcance de proyecto: INTERACTIVO\n  genesis agent set <builder|critic> <claude|codex> [--project]   elige qu\xE9 agente construye y cu\xE1l revisa (este proyecto, o tu valor por defecto)\n  genesis design status                  \xBFel dise\xF1o est\xE1 activo aqu\xED y contra qu\xE9 sistema de dise\xF1o? (solo lectura)\n  genesis design system set <id> [--commit <sha>]   guarda el sistema de dise\xF1o que us\xF3 una sincronizaci\xF3n\n  genesis design update                  actualiza el sistema de dise\xF1o configurado a su \xFAltima rama\n  genesis design set <id> <necesidad>    registra si esta iniciativa tiene interfaz ({needs})\n  genesis design pull <id> [--clean]     copia las pantallas en local (las URL de vista previa van por stdin, nunca por argv)\n  genesis design record <id> --system <id> --commit <sha> --project <id> --url <url>\n                                            registra el dise\xF1o que produjo una sincronizaci\xF3n (reabre la firma de dise\xF1o)\n  genesis design audit <id>              revisa que las pantallas copiadas sean autocontenidas\n  genesis change archive <id>            archiva una iniciativa terminada\n\nLas aprobaciones (gate approve, infra accept, seal) las debe hacer una persona en una terminal.\n',
+  "helper.usage": 'genesis \u2014 registro de iniciativas\n\n  genesis change new "<t\xEDtulo>"          crea una iniciativa nueva\n  genesis ingest <spec.json>             importa una Build-Ready Spec a una iniciativa ya armada\n  genesis board                          lista las iniciativas y el estado de sus firmas, infra y dise\xF1o\n  genesis validate [id]                  revisa que la carpeta de cada iniciativa sea coherente (estado, firmas, specs, enlaces)\n  genesis decide <id> "<qu\xE9>"            registra una decisi\xF3n (DEC-*) y marca como desactualizado lo que afecta (--affects a,b --supersedes DEC-x --why t --rejected "opci\xF3n: raz\xF3n" --breaks-at t --evidence f1,f2)\n  genesis check [<n> <A|B|C>]            comprobaci\xF3n de lectura de docs/HOW-IT-WORKS.md: muestra la siguiente pregunta (3 opciones) o la responde con una letra\n  genesis sign                           firma docs/HOW-IT-WORKS.md como le\xEDdo; se rechaza hasta aprobar todos los puntos de control\n  genesis signing <setup|status|adopt>   firmas con huella (Touch ID): activa las aprobaciones firmadas, muestra su estado o re-firma lo ya aprobado\n  genesis how-it-works [--no-llm]        genera docs/HOW-IT-WORKS.md desde el registro de decisiones (el modelo solo trabaja en las decisiones que cambiaron)\n  genesis manual [--no-llm]              manual en lenguaje sencillo (encabezados fijos): secciones del registro y puntos del README con citas verificadas\n  genesis backfill propose --into <id>   propone decisiones a partir del historial escrito del proyecto (citas verificadas); luego: backfill apply --accept 1,3\n  genesis cards-draft                    prepara borradores de tarjetas de estudio de Product Brain (card-v1) desde el registro de decisiones, en docs/cards-draft/\n  genesis reconcile <id> <artefacto>     quita la marca de desactualizado despu\xE9s de poner el artefacto al d\xEDa\n  genesis breakpoint <id> "<qu\xE9 pas\xF3>"   deja anotado que el trabajo se detuvo para pedirle una decisi\xF3n a una persona (solo agrega, no se firma)\n  genesis judge <id>                     veredicto adversarial de preparaci\xF3n sobre el paquete de specs (PASS / PASS WITH OBSERVATIONS / FAIL)\n  genesis verify                         corre las validaciones del proyecto (typecheck/lint/test/build): la autocomprobaci\xF3n del loop\n  genesis review                         revisa solo el diff del \xE1rbol de trabajo (c\xF3digo y seguridad): hallazgos; lo obligatorio bloquea\n  genesis loop [archivo-de-tareas]       reparte las tareas en trabajos aislados en worktrees, autoverificados y autorrevisados\n  genesis gate approve <id> <firma>      aprueba una firma (proposal | implementation | design): INTERACTIVO; no firma la plantilla sin completar, salvo --anyway "<raz\xF3n>"\n  genesis gate request-changes <id> <firma> --note "<qu\xE9 cambiar>"   devuelve una firma con lo que hay que cambiar (queda en el registro): INTERACTIVO\n  genesis seal <id>                      vuelve a sellar las firmas de una iniciativa despu\xE9s de que revisaste un state.yaml cambiado fuera de genesis: INTERACTIVO\n  genesis gate waive <id> design --reason "<por qu\xE9>"   omite la firma de dise\xF1o cuando nadie puede producir pantallas (una decisi\xF3n humana que queda registrada)\n  genesis infra set <id> <alcance>       registra el alcance de infraestructura ({scopes})\n  genesis infra accept <id>              acepta la firma de infraestructura de un alcance de proyecto: INTERACTIVO\n  genesis agent set <builder|critic> <claude|codex> [--project]   elige qu\xE9 agente construye y cu\xE1l revisa (este proyecto, o tu valor por defecto)\n  genesis design status                  \xBFel dise\xF1o est\xE1 activo aqu\xED y contra qu\xE9 sistema de dise\xF1o? (solo lectura)\n  genesis design system set <id> [--commit <sha>]   guarda el sistema de dise\xF1o que us\xF3 una sincronizaci\xF3n\n  genesis design update                  actualiza el sistema de dise\xF1o configurado a su \xFAltima rama\n  genesis design set <id> <necesidad>    registra si esta iniciativa tiene interfaz ({needs})\n  genesis design pull <id> [--clean]     copia las pantallas en local (las URL de vista previa van por stdin, nunca por argv)\n  genesis design record <id> --system <id> --commit <sha> --project <id> --url <url>\n                                            registra el dise\xF1o que produjo una sincronizaci\xF3n (reabre la firma de dise\xF1o)\n  genesis design audit <id>              revisa que las pantallas copiadas sean autocontenidas\n  genesis change archive <id>            archiva una iniciativa terminada: pide un "End-user check" decidido con --why, o --abandon "<raz\xF3n>"\n\nLas aprobaciones (gate approve, infra accept, seal) las debe hacer una persona en una terminal.\n',
   // ── board ───────────────────────────────────────────────────────────────────
   "helper.board.empty": 'No hay iniciativas activas. Crea una con: genesis change new "<t\xEDtulo>"',
   "helper.board.title": "INICIATIVAS",
@@ -66,6 +66,17 @@ var es = {
   "helper.change.exists": "Ya existe una iniciativa \xAB{id}\xBB.",
   "helper.change.idRequired": "Hace falta el id de la iniciativa: genesis change archive <id>",
   "helper.change.archived": "Archivada {id} \u2192 openspec/{dest}/",
+  "helper.breakpoint.usage": 'Uso: genesis breakpoint <id> "<qu\xE9 pas\xF3>"',
+  "helper.breakpoint.logged": "Anotado el punto de parada en {id}. Detente aqu\xED y preg\xFAntale a la persona antes de seguir.",
+  "helper.err.breakpointEmpty": 'Hace falta decir qu\xE9 pas\xF3: genesis breakpoint <id> "<qu\xE9 pas\xF3>"',
+  "helper.err.breakpointLong": "El texto del punto de parada es demasiado largo (m\xE1ximo {max} caracteres): res\xFAmelo.",
+  "helper.err.breakpointBlock": "El state.yaml de \xAB{id}\xBB no tiene un \xFAnico bloque `breakpoints:`; no se puede anotar.",
+  "helper.archive.needsCheck": '\xAB{id}\xBB todav\xEDa no se archiva: falta la comprobaci\xF3n con una persona usuaria. Reg\xEDstrala: genesis decide {id} "End-user check: <done|accepted-risk|not-applicable>" --why "<qu\xE9 viste, o por qu\xE9 se acepta el riesgo>"\n  Si la iniciativa se cre\xF3 por error y nunca se entregar\xE1: genesis change archive {id} --abandon "<raz\xF3n, 10 caracteres o m\xE1s>"',
+  "helper.archive.abandonShort": '--abandon necesita una raz\xF3n de verdad (10 caracteres o m\xE1s): genesis change archive {id} --abandon "<raz\xF3n>". Queda registrada como decisi\xF3n.',
+  "helper.decide.endUserAnswer": 'La respuesta del End-user check debe ser done, accepted-risk o not-applicable: genesis decide {id} "End-user check: <done|accepted-risk|not-applicable>" --why "<por qu\xE9>"',
+  "helper.decide.endUserWhy": 'El End-user check necesita un motivo: agrega --why "<qu\xE9 viste, o por qu\xE9 se acepta el riesgo>" a genesis decide {id} "{what}"',
+  "helper.decide.endUserExists": "Ya hay un End-user check vigente en {id} ({existing}). Para cambiar la respuesta: agrega --supersedes {existing}.",
+  "helper.err.archiveExists": "No se archiva {id}: ya existe openspec/{dest}/. Mueve o renombra esa carpeta y vuelve a intentarlo (no se toc\xF3 nada).",
   "helper.change.archivedFolded.one": "Archivada {id} \u2192 openspec/{dest}/ \xB7 se integr\xF3 {n} spec en openspec/specs/",
   "helper.change.archivedFolded.other": "Archivada {id} \u2192 openspec/{dest}/ \xB7 se integraron {n} specs en openspec/specs/",
   "helper.infra.usage": "Uso: genesis infra set <id> <{scopes}>",
@@ -92,6 +103,7 @@ var es = {
   // ── human sign-off (bin.ts) ─────────────────────────────────────────────────
   "helper.sign.action.approve": "aprobar la firma de {gate}",
   "helper.sign.action.waive": "omitir la firma de dise\xF1o (no se va a producir ning\xFAn dise\xF1o)",
+  "helper.sign.action.request": "devolver la firma de {gate} pidiendo cambios",
   "helper.sign.action.accept": "aceptar la firma de infraestructura del proyecto",
   "helper.sign.action.lower": "bajar el alcance de infraestructura (quita una firma que una persona deb\xEDa dar)",
   "helper.sign.about.lower": "\nVas a bajar el alcance de infraestructura de \xAB{id}\xBB: se quita una firma que una persona deb\xEDa dar.",
@@ -99,6 +111,15 @@ var es = {
   "helper.signing.usage": "Uso: genesis signing setup [--password] | status | adopt <id>",
   "helper.signing.unsupported": "Las aprobaciones firmadas necesitan macOS (el Secure Enclave).",
   "helper.signing.failed": "No se pudo: {reason}",
+  "helper.signed.untrusted": "Las aprobaciones firmadas est\xE1n activadas pero no son de fiar: {reason}",
+  "helper.signed.helperMissing": "Este proyecto exige aprobaciones firmadas pero falta el ayudante de firma: ejecuta genesis signing setup",
+  "helper.signed.wrongKey": "La clave de firma de esta m\xE1quina no es la que tiene fijada este proyecto, as\xED que no puede firmar por \xE9l",
+  "helper.signing.needsMac": "Las aprobaciones firmadas necesitan macOS (el Secure Enclave).",
+  "helper.signing.compileFailed": "No se pudo compilar el ayudante de firma (\xBFest\xE1 instalada la herramienta de l\xEDnea de comandos de Xcode? `xcode-select --install`): {detail}",
+  "helper.signing.cannotRun": "No se pudo ejecutar el ayudante de firma: {why}",
+  "helper.signing.notApproved": "El ayudante de firma no aprob\xF3.",
+  "helper.signing.wrongCount": "El ayudante de firma devolvi\xF3 un n\xFAmero de firmas distinto al esperado.",
+  "helper.signing.pinnedOther": "Este proyecto ya est\xE1 fijado a otra clave; cambiarla anula todas las aprobaciones, as\xED que no se hace aqu\xED.",
   "helper.signing.setupDone": "Aprobaciones firmadas activadas. Clave {kid}. Desde ahora una firma cuenta solo si la das con tu huella. Para lo que ya estaba aprobado: genesis signing adopt <id>.",
   "helper.signing.status.supported": "macOS con Secure Enclave: {value}",
   "helper.signing.status.helper": "Ayudante de firma compilado: {value}",
@@ -122,6 +143,7 @@ var es = {
   "helper.sign.refuse": "No se puede: \xAB{action}\xBB es una firma humana y se hace de forma interactiva en una terminal; no se puede automatizar. Abre una terminal en el proyecto y ejec\xFAtalo t\xFA.",
   "helper.sign.about.approve": "\nVas a aprobar la firma de {gate} de \xAB{id}\xBB.",
   "helper.sign.about.waive": "\nVas a omitir la firma de dise\xF1o de \xAB{id}\xBB (no se va a producir ning\xFAn dise\xF1o).",
+  "helper.sign.about.request": "\nVas a devolver la firma de {gate} de \xAB{id}\xBB pidiendo cambios. No firma nada: queda registrado qui\xE9n la devolvi\xF3 y por qu\xE9.",
   "helper.sign.about.accept": "\nVas a aceptar la firma de infraestructura del proyecto de \xAB{id}\xBB.",
   "helper.sign.about.seal": "\nVas a sellar el estado de las firmas de \xAB{id}\xBB tal como est\xE1 ahora.",
   "helper.sign.review": "Revisa {review} antes: al firmar confirmas que lo le\xEDste y est\xE1s de acuerdo.",
@@ -134,6 +156,13 @@ var es = {
   "helper.gate.design": "dise\xF1o",
   "helper.gateApprove.usage": "Uso: genesis gate approve <id> <{gates}>",
   "helper.gateApprove.recorded": "Registrado: firma de {gate} aprobada por {by} el {date}.",
+  "helper.gateRequest.usage": 'Uso: genesis gate request-changes <id> <{gates}> --note "<qu\xE9 cambiar>"',
+  "helper.gateRequest.noteNeeded": 'Devolver una firma necesita decir qu\xE9 cambiar (5 caracteres o m\xE1s): --note "<qu\xE9 cambiar>".',
+  "helper.gateRequest.recorded": "Registrado: firma de {gate} devuelta con cambios por {by} el {date}.",
+  "helper.gateApprove.notReady": 'No se firma {gate} de \xAB{id}\xBB: la plantilla sigue sin completar.\n{reasons}\nCompleta esos archivos y vuelve a ejecutarlo. Si de verdad no hay nada que escribir, firma dejando la raz\xF3n: genesis gate approve {id} {arg} --anyway "<raz\xF3n, 10 caracteres o m\xE1s>"',
+  "helper.gateApprove.anywayShort": '--anyway necesita una raz\xF3n de verdad (10 caracteres o m\xE1s): --anyway "<por qu\xE9 firmas sin completar>". La raz\xF3n queda en el registro de firmas.',
+  "helper.blocker.section": "  - {file}: la secci\xF3n \xAB{section}\xBB sigue sin escribir.",
+  "helper.blocker.noTasks": "  - tasks.md: todav\xEDa no tiene tareas reales, solo las de ejemplo.",
   "helper.gateWaive.usage": 'Uso: genesis gate waive <id> design --reason "<por qu\xE9>"\nSolo se puede omitir la firma de dise\xF1o.',
   "helper.gateWaive.reasonNeeded": 'Omitir necesita una raz\xF3n de verdad (10 caracteres o m\xE1s): --reason "<por qu\xE9>". Un sello autom\xE1tico no es un registro.',
   "helper.gateWaive.recorded": "Registrado: dise\xF1o omitido por {by} el {date} \u2014 {reason}",
@@ -190,7 +219,8 @@ Las URL de vista previa se leen por stdin para que nunca queden en argv.`,
   "helper.seal.usage": "Uso: genesis seal <id-de-la-iniciativa>",
   "helper.seal.noInitiative": "No existe la iniciativa: {id}",
   "helper.seal.done": "Sellada {id}: sus firmas quedan registradas como est\xE1n ahora.",
-  "helper.check.noKey": "Todav\xEDa no hay puntos de control. Ejecuta primero `genesis how-it-works` (necesita el modelo).",
+  "helper.check.noKey": "Todav\xEDa no hay puntos de control. Ejecuta primero `genesis how-it-works` (sin --no-llm; necesita a Claude con la sesi\xF3n iniciada: abre `claude` y escribe /login).",
+  "helper.check.noDecisions": 'Todav\xEDa no hay puntos de control. Ninguna decisi\xF3n tiene un motivo (--why), y las preguntas salen de ah\xED. Registra una: genesis decide <id> "<qu\xE9>" --why "<por qu\xE9>" --evidence <archivos>; luego ejecuta `genesis how-it-works`.',
   "helper.check.show": "Punto de control {n} de {total} (pendientes: {pending}): sobre {id}",
   "helper.check.answerHint": "Responde con una letra: npm run genesis -- check {n} <A|B|C>",
   "helper.check.allPassed": "Todos los puntos de control est\xE1n aprobados. Ejecuta `genesis sign`.",
@@ -201,8 +231,14 @@ Las URL de vista previa se leen por stdin para que nunca queden en argv.`,
   "helper.check.locked": "Espera {seconds} s antes de volver a responder este punto de control.",
   "helper.check.passedLast": "Punto de control {n}: aprobado. Ejecuta `genesis sign`.",
   "helper.check.passedNext": "Punto de control {n}: aprobado. Ejecuta `genesis check` para el siguiente.",
+  "helper.check.sessionHint": "Pulsa A, B o C para responder (q para salir; el avance se guarda).",
+  "helper.check.sessionOne": "Punto de control {n}: aprobado.\n",
+  "helper.check.sessionPassed": "Todos los puntos de control est\xE1n aprobados. Ejecuta `genesis sign`.",
+  "helper.check.sessionLocked": "Los puntos que faltan est\xE1n en espera. Vuelve a ejecutar `genesis check` en {seconds} s.",
+  "helper.check.sessionQuit": "Saliste del chequeo; lo respondido ya est\xE1 guardado. Vuelve con `genesis check`.",
   "helper.check.failed": "Punto de control {n}: todav\xEDa no. Vuelve a leer esa secci\xF3n del documento; al volver a intentar te puede tocar otra pregunta, despu\xE9s de esperar {seconds} s.",
-  "helper.sign.noKey": "No se firm\xF3: no hay puntos de control. Ejecuta primero `genesis how-it-works`.",
+  "helper.sign.noKey": "No se firm\xF3: no hay puntos de control. Ejecuta primero `genesis how-it-works` (sin --no-llm; necesita a Claude con la sesi\xF3n iniciada: abre `claude` y escribe /login).",
+  "helper.sign.noDecisions": 'No se firm\xF3: no hay puntos de control. Ninguna decisi\xF3n tiene un motivo (--why). Registra una: genesis decide <id> "<qu\xE9>" --why "<por qu\xE9>" --evidence <archivos>; luego ejecuta `genesis how-it-works`.',
   "helper.sign.done": "Firmado docs/HOW-IT-WORKS.md (docs/.reading-signature.json).",
   // ── cards-draft / backfill / manual (bin.ts) ────────────────────────────────
   "helper.draft.action.new": "nuevo",
@@ -301,6 +337,7 @@ Las URL de vista previa se leen por stdin para que nunca queden en argv.`,
   "helper.validate.contractNotReady": "la fase es `{phase}` pero el contrato del loop dice `Status: {status}`: una persona lo firma (Status: Ready) antes de que el loop construya.",
   "helper.validate.contractUnset": "sin definir",
   "helper.validate.contractStillDraft": "la firma de implementaci\xF3n est\xE1 aprobada pero el contrato del loop sigue en `Status: Draft`.",
+  "helper.validate.templateGate": 'la firma de {gate} se dio sobre la plantilla sin completar. {reasons} Completa el archivo o vuelve a firmar con una raz\xF3n: genesis gate approve {id} {gate} --anyway "<raz\xF3n>".',
   "helper.validate.noSpecFile": "El JTBD `{id}` de build-ready-spec.json no tiene archivo de spec.",
   "helper.validate.orphanSpec": "El archivo de spec no tiene un JTBD que le corresponda en build-ready-spec.json (hu\xE9rfano).",
   "helper.validate.outcomeNotInTasks": "el resultado `{id}` ({title}) est\xE1 en el alcance pero no aparece en tasks.md.",
@@ -381,11 +418,13 @@ var en = {
   genesis backfill propose --into <id>   propose decisions from a project's written history (quotes verified); then: backfill apply --accept 1,3
   genesis cards-draft                     draft Product Brain study cards (card-v1) from the decision ledger into docs/cards-draft/
   genesis reconcile <id> <artifact>      clear a stale marker after bringing the artifact in line
+  genesis breakpoint <id> "<what happened>"   log that the work stopped to ask a person for a decision (append-only, not signed)
   genesis judge <id>                     adversarial readiness verdict over the spec package (PASS / PASS WITH OBSERVATIONS / FAIL)
   genesis verify                         run the project's gates (typecheck/lint/test/build) \u2014 the loop's self-check
   genesis review                         auto-review the working-tree diff (code + security) \u2014 findings, must-fix blocks
   genesis loop [tasks-file]              fan out tasks into worktree-isolated, self-verified, auto-reviewed jobs
-  genesis gate approve <id> <gate>       approve a gate (proposal | implementation | design) - INTERACTIVE
+  genesis gate approve <id> <gate>       approve a gate (proposal | implementation | design) - INTERACTIVE; refuses the unfilled template unless --anyway "<reason>"
+  genesis gate request-changes <id> <gate> --note "<what to change>"   send a gate back with what to change (kept in the trail) - INTERACTIVE
   genesis seal <id>                      re-seal an initiative's gates after you reviewed a state.yaml changed outside genesis \u2014 INTERACTIVE
   genesis gate waive <id> design --reason "<why>"   waive the design gate when nobody can produce screens (a recorded, human-only decision)
   genesis infra set <id> <scope>         record infra scope ({scopes})
@@ -399,7 +438,7 @@ var en = {
   genesis design record <id> --system <id> --commit <sha> --project <id> --url <url>
                                             record the design a sync produced (re-opens the design gate)
   genesis design audit <id>              check the mirrored screens are self-contained
-  genesis change archive <id>            archive a done initiative
+  genesis change archive <id>            archive a done initiative: needs a decided "End-user check" with --why, or --abandon "<reason>"
 
 Approvals (gate approve, infra accept, seal) must be run by a human in a terminal.
 `,
@@ -443,6 +482,17 @@ Approvals (gate approve, infra accept, seal) must be run by a human in a termina
   "helper.change.exists": 'An initiative "{id}" already exists.',
   "helper.change.idRequired": "An initiative id is required: genesis change archive <id>",
   "helper.change.archived": "Archived {id} \u2192 openspec/{dest}/",
+  "helper.breakpoint.usage": 'Usage: genesis breakpoint <id> "<what happened>"',
+  "helper.breakpoint.logged": "Logged the breakpoint in {id}. Stop here and ask the person before going on.",
+  "helper.err.breakpointEmpty": 'Say what happened: genesis breakpoint <id> "<what happened>"',
+  "helper.err.breakpointLong": "The breakpoint text is too long (at most {max} characters): summarise it.",
+  "helper.err.breakpointBlock": 'The state.yaml of "{id}" does not have exactly one `breakpoints:` block; cannot log.',
+  "helper.archive.needsCheck": '"{id}" is not archived yet: the end-user check is missing. Record it: genesis decide {id} "End-user check: <done|accepted-risk|not-applicable>" --why "<what you saw, or why the risk is accepted>"\n  If the initiative was created by mistake and will never ship: genesis change archive {id} --abandon "<reason, 10+ characters>"',
+  "helper.archive.abandonShort": '--abandon needs a real reason (10 characters or more): genesis change archive {id} --abandon "<reason>". It is recorded as a decision.',
+  "helper.decide.endUserAnswer": 'The End-user check answer must be done, accepted-risk or not-applicable: genesis decide {id} "End-user check: <done|accepted-risk|not-applicable>" --why "<why>"',
+  "helper.decide.endUserWhy": 'The End-user check needs a reason: add --why "<what you saw, or why the risk is accepted>" to genesis decide {id} "{what}"',
+  "helper.decide.endUserExists": "There is already an active End-user check in {id} ({existing}). To change the answer, add --supersedes {existing}.",
+  "helper.err.archiveExists": "Not archiving {id}: openspec/{dest}/ already exists. Move or rename that folder and try again (nothing was touched).",
   "helper.change.archivedFolded.one": "Archived {id} \u2192 openspec/{dest}/ \xB7 folded {n} spec into openspec/specs/",
   "helper.change.archivedFolded.other": "Archived {id} \u2192 openspec/{dest}/ \xB7 folded {n} specs into openspec/specs/",
   "helper.infra.usage": "Usage: genesis infra set <id> <{scopes}>",
@@ -469,6 +519,7 @@ Approvals (gate approve, infra accept, seal) must be run by a human in a termina
   // ── human sign-off (bin.ts) ─────────────────────────────────────────────────
   "helper.sign.action.approve": "approve the {gate} gate",
   "helper.sign.action.waive": "waive the design gate (no design will be produced)",
+  "helper.sign.action.request": "send the {gate} gate back asking for changes",
   "helper.sign.action.accept": "accept the project infra gate",
   "helper.sign.action.lower": "lower the infra scope (removes a sign-off a person was meant to give)",
   "helper.sign.about.lower": '\nAbout to lower the infra scope of "{id}": this removes a sign-off a person was meant to give.',
@@ -476,6 +527,15 @@ Approvals (gate approve, infra accept, seal) must be run by a human in a termina
   "helper.signing.usage": "Usage: genesis signing setup [--password] | status | adopt <id>",
   "helper.signing.unsupported": "Signed approvals need macOS (the Secure Enclave).",
   "helper.signing.failed": "Could not: {reason}",
+  "helper.signed.untrusted": "signed approvals are set up but cannot be trusted: {reason}",
+  "helper.signed.helperMissing": "this project requires signed approvals but the signing helper is missing: run genesis signing setup",
+  "helper.signed.wrongKey": "the signing key on this machine is not the one this project is pinned to, so it cannot sign for it",
+  "helper.signing.needsMac": "signed approvals need macOS (the Secure Enclave)",
+  "helper.signing.compileFailed": "could not compile the signing helper (is Xcode's command line toolchain installed? `xcode-select --install`): {detail}",
+  "helper.signing.cannotRun": "the signing helper could not run: {why}",
+  "helper.signing.notApproved": "the signing helper did not approve",
+  "helper.signing.wrongCount": "the signing helper returned the wrong number of signatures",
+  "helper.signing.pinnedOther": "this project is already pinned to a different key; changing it voids every approval, so it is not done here",
   "helper.signing.setupDone": "Signed approvals are on. Key {kid}. From now on a sign-off counts only if you give it with your fingerprint. For what was already approved: genesis signing adopt <id>.",
   "helper.signing.status.supported": "macOS with a Secure Enclave: {value}",
   "helper.signing.status.helper": "Signing helper compiled: {value}",
@@ -499,6 +559,7 @@ Approvals (gate approve, infra accept, seal) must be run by a human in a termina
   "helper.sign.refuse": `Refusing: "{action}" is a human sign-off and must be run interactively in a terminal \u2014 it can't be automated. Open a terminal in the project and run it yourself.`,
   "helper.sign.about.approve": '\nAbout to approve the {gate} gate for "{id}".',
   "helper.sign.about.waive": '\nAbout to waive the design gate (no design will be produced) for "{id}".',
+  "helper.sign.about.request": '\nAbout to send the {gate} gate for "{id}" back asking for changes. This signs nothing: who sent it back, and why, is recorded.',
   "helper.sign.about.accept": '\nAbout to accept the project infra gate for "{id}".',
   "helper.sign.about.seal": '\nAbout to seal the gate state as it is now (state.yaml) for "{id}".',
   "helper.sign.review": "Review {review} first \u2014 by signing you confirm you read it and agree.",
@@ -511,6 +572,13 @@ Approvals (gate approve, infra accept, seal) must be run by a human in a termina
   "helper.gate.design": "design",
   "helper.gateApprove.usage": "Usage: genesis gate approve <id> <{gates}>",
   "helper.gateApprove.recorded": "Recorded: {gate} approved by {by} on {date}.",
+  "helper.gateRequest.usage": 'Usage: genesis gate request-changes <id> <{gates}> --note "<what to change>"',
+  "helper.gateRequest.noteNeeded": 'Sending a gate back needs to say what to change (5 characters or more): --note "<what to change>".',
+  "helper.gateRequest.recorded": "Recorded: {gate} gate sent back with changes requested by {by} on {date}.",
+  "helper.gateApprove.notReady": 'Not signing {gate} for "{id}": the template is still unfilled.\n{reasons}\nFill those files in and run it again. If there is truly nothing to write, sign and leave the reason: genesis gate approve {id} {arg} --anyway "<reason, 10+ characters>"',
+  "helper.gateApprove.anywayShort": '--anyway needs a real reason (10 characters or more): --anyway "<why you sign unfilled>". The reason is kept in the approvals trail.',
+  "helper.blocker.section": '  - {file}: the "{section}" section is still unwritten.',
+  "helper.blocker.noTasks": "  - tasks.md: no real tasks yet, only the example ones.",
   "helper.gateWaive.usage": 'Usage: genesis gate waive <id> design --reason "<why>"\nOnly the design gate can be waived.',
   "helper.gateWaive.reasonNeeded": 'A waiver needs a real reason (10+ characters) \u2014 --reason "<why>". A rubber stamp is not a record.',
   "helper.gateWaive.recorded": "Recorded: design waived by {by} on {date} \u2014 {reason}",
@@ -569,7 +637,8 @@ The preview URLs are read from stdin so they never land in argv.`,
   "helper.seal.usage": "Usage: genesis seal <initiative-id>",
   "helper.seal.noInitiative": "No such initiative: {id}",
   "helper.seal.done": "Sealed {id}: its gates are recorded as they are now.",
-  "helper.check.noKey": "There are no checkpoints yet. Run `genesis how-it-works` first (it needs the model).",
+  "helper.check.noKey": "There are no checkpoints yet. Run `genesis how-it-works` first (without --no-llm; it needs Claude logged in: open `claude` and type /login).",
+  "helper.check.noDecisions": 'There are no checkpoints yet. No decision has a why, and the questions come from those. Record one: genesis decide <id> "<what>" --why "<why>" --evidence <files>; then run `genesis how-it-works`.',
   "helper.check.show": "Checkpoint {n} of {total} ({pending} pending): about {id}",
   "helper.check.answerHint": "Answer with one letter: npm run genesis -- check {n} <A|B|C>",
   "helper.check.allPassed": "Every checkpoint is passed. Run `genesis sign`.",
@@ -580,8 +649,14 @@ The preview URLs are read from stdin so they never land in argv.`,
   "helper.check.locked": "Wait {seconds} s before answering this checkpoint again.",
   "helper.check.passedLast": "Checkpoint {n}: passed. Run `genesis sign`.",
   "helper.check.passedNext": "Checkpoint {n}: passed. Run `genesis check` for the next one.",
+  "helper.check.sessionHint": "Press A, B or C to answer (q to quit; progress is saved).",
+  "helper.check.sessionOne": "Checkpoint {n}: passed.\n",
+  "helper.check.sessionPassed": "Every checkpoint is passed. Run `genesis sign`.",
+  "helper.check.sessionLocked": "The remaining checkpoints are waiting. Run `genesis check` again in {seconds} s.",
+  "helper.check.sessionQuit": "You left the check; what you answered is saved. Come back with `genesis check`.",
   "helper.check.failed": "Checkpoint {n}: not yet. Re-read that section of the document; when you try again you may get a different question, after waiting {seconds} s.",
-  "helper.sign.noKey": "Not signed: there are no checkpoints. Run `genesis how-it-works` first.",
+  "helper.sign.noKey": "Not signed: there are no checkpoints. Run `genesis how-it-works` first (without --no-llm; it needs Claude logged in: open `claude` and type /login).",
+  "helper.sign.noDecisions": 'Not signed: there are no checkpoints. No decision has a why. Record one: genesis decide <id> "<what>" --why "<why>" --evidence <files>; then run `genesis how-it-works`.',
   "helper.sign.done": "Signed docs/HOW-IT-WORKS.md (docs/.reading-signature.json).",
   // ── cards-draft / backfill / manual (bin.ts) ────────────────────────────────
   "helper.draft.action.new": "new",
@@ -680,6 +755,7 @@ The preview URLs are read from stdin so they never land in argv.`,
   "helper.validate.contractNotReady": "phase is `{phase}` but the loop-contract is `Status: {status}` \u2014 a human signs it (Status: Ready) before the loop builds.",
   "helper.validate.contractUnset": "unset",
   "helper.validate.contractStillDraft": "the implementation gate is approved but the loop-contract is still `Status: Draft`.",
+  "helper.validate.templateGate": 'the {gate} gate was signed over the untouched template. {reasons} Fill the file in, or sign again with a reason: genesis gate approve {id} {gate} --anyway "<reason>".',
   "helper.validate.noSpecFile": "JTBD `{id}` in build-ready-spec.json has no spec file.",
   "helper.validate.orphanSpec": "Spec file has no matching JTBD in build-ready-spec.json (orphan).",
   "helper.validate.outcomeNotInTasks": "in-scope outcome `{id}` ({title}) is not referenced in tasks.md.",
@@ -785,6 +861,9 @@ var reports = {
     "reports.verify.fail": "\u274C Verificaci\xF3n: FAIL (en {gate})",
     "reports.verify.notReached": "  \xB7 sin ejecutar (se corta en el primer fallo): {gates}",
     "reports.verify.skipped": "  \xB7 omitidos (el proyecto no tiene ese script): {gates}",
+    // verify: dependencies that are not installed (a command-not-found is not a failing project)
+    "reports.verify.depsMissing": "faltan las dependencias del proyecto (no hay node_modules): ejecuta `npm install` y vuelve a intentarlo",
+    "reports.verify.commandNotFound": "  \xB7 el comando de {gate} no se encontr\xF3 (c\xF3digo 127): falta una herramienta que no est\xE1 instalada; ejecuta `npm install`.",
     // howItWorks: warnings about docs/HOW-IT-WORKS.md (the document itself stays in Spanish)
     "reports.howItWorks.neverGenerated": 'hay decisiones con un "por qu\xE9" escrito pero docs/HOW-IT-WORKS.md nunca se gener\xF3: ejecuta `genesis how-it-works`.',
     "reports.howItWorks.noFingerprint": "docs/HOW-IT-WORKS.md no se gener\xF3 desde el registro (no tiene huella): ejecuta `genesis how-it-works` para reemplazarlo.",
@@ -796,8 +875,8 @@ var reports = {
     "reports.manual.noFingerprint": "docs/MANUAL.md no se gener\xF3 desde el registro (no tiene huella): ejecuta `genesis manual` para reemplazarlo.",
     "reports.manual.stale": "docs/MANUAL.md est\xE1 desactualizado respecto al registro o a sus archivos fuente: ejecuta `genesis manual`.",
     // reading check (Comprobación de lectura, Firmas)
-    "reports.sign.noCheckpoints": "No hay puntos de control, as\xED que no se comprob\xF3 nada. Ejecuta primero `genesis how-it-works` (necesita el modelo).",
-    "reports.sign.noKey": "No hay puntos de control. Genera primero el documento con `genesis how-it-works` (necesita el modelo).",
+    "reports.sign.noKeyYet": "No hay puntos de control, as\xED que no se comprob\xF3 nada. Genera el documento con `genesis how-it-works` (sin --no-llm; necesita a Claude con la sesi\xF3n iniciada: abre `claude` y escribe /login) y vuelve a intentarlo.",
+    "reports.sign.noDecisions": 'No hay puntos de control: ninguna decisi\xF3n tiene todav\xEDa un motivo (--why), y las preguntas salen de ah\xED. Registra una: genesis decide <id> "<qu\xE9>" --why "<por qu\xE9>" --evidence <archivos>; despu\xE9s ejecuta `genesis how-it-works`.',
     "reports.sign.noDoc": "{doc} no existe. Ejecuta `genesis how-it-works`.",
     "reports.sign.docStale": "{doc} est\xE1 desactualizado respecto al registro de decisiones. Ejecuta `genesis how-it-works` y vuelve a responder con `genesis check`.",
     "reports.sign.unmarked": "{doc} no muestra el punto de control {numbers}. Ejecuta `genesis how-it-works` para regenerarlo.",
@@ -832,7 +911,11 @@ var reports = {
     "reports.backfill.proposal.evidence": "Evidencia: {files}",
     "reports.backfill.proposal.quote": 'Cita (`{file}`): "{text}"',
     "reports.backfill.proposal.dropped": "Descartados por la verificaci\xF3n ({n})",
-    "reports.backfill.proposal.noneDropped": "_Ninguno._"
+    "reports.backfill.proposal.noneDropped": "_Ninguno._",
+    // verify: nothing tested
+    "reports.verify.passIncomplete": "\u26A0 Verificaci\xF3n: INCOMPLETA \u2014 pas\xF3, pero no se ejecut\xF3 ninguna prueba",
+    "reports.verify.noTestScript": '  \xB7 el proyecto no tiene script "test", as\xED que no se ejecut\xF3 ninguna prueba. El agente no puede editar package.json: d\xEDselo a la persona.',
+    "reports.verify.noTestFiles": "  \xB7 no se ejecut\xF3 ninguna prueba: no hay archivos de prueba. Escribe una prueba por criterio de aceptaci\xF3n en tests/."
   },
   en: {
     // judge
@@ -872,6 +955,9 @@ var reports = {
     "reports.verify.fail": "\u274C Verification: FAIL (at {gate})",
     "reports.verify.notReached": "  \xB7 not reached (fast-fail): {gates}",
     "reports.verify.skipped": "  \xB7 skipped (no such script): {gates}",
+    // verify: dependencies that are not installed (a command-not-found is not a failing project)
+    "reports.verify.depsMissing": "the project dependencies are missing (no node_modules): run `npm install` and try again",
+    "reports.verify.commandNotFound": "  \xB7 the {gate} command was not found (exit 127): a tool is not installed; run `npm install`.",
     // howItWorks: warnings about docs/HOW-IT-WORKS.md (the document itself stays in Spanish)
     "reports.howItWorks.neverGenerated": 'there are decisions with a written "why" but docs/HOW-IT-WORKS.md was never generated: run `genesis how-it-works`.',
     "reports.howItWorks.noFingerprint": "docs/HOW-IT-WORKS.md was not generated from the ledger (it has no fingerprint): run `genesis how-it-works` to replace it.",
@@ -883,8 +969,8 @@ var reports = {
     "reports.manual.noFingerprint": "docs/MANUAL.md was not generated from the ledger (it has no fingerprint): run `genesis manual` to replace it.",
     "reports.manual.stale": "docs/MANUAL.md is out of date with the ledger or its source files: run `genesis manual`.",
     // reading check
-    "reports.sign.noCheckpoints": "There are no checkpoints, so nothing was checked. Run `genesis how-it-works` first (it needs the model).",
-    "reports.sign.noKey": "There are no checkpoints. Generate the document first with `genesis how-it-works` (it needs the model).",
+    "reports.sign.noKeyYet": "There are no checkpoints, so nothing was checked. Generate the document with `genesis how-it-works` (without --no-llm; it needs Claude logged in: open `claude` and type /login) and try again.",
+    "reports.sign.noDecisions": 'There are no checkpoints: no decision has a why yet, and the questions come from those. Record one: genesis decide <id> "<what>" --why "<why>" --evidence <files>; then run `genesis how-it-works`.',
     "reports.sign.noDoc": "{doc} does not exist. Run `genesis how-it-works`.",
     "reports.sign.docStale": "{doc} is out of date with the decision ledger. Run `genesis how-it-works` and answer again with `genesis check`.",
     "reports.sign.unmarked": "{doc} does not show checkpoint {numbers}. Run `genesis how-it-works` to regenerate it.",
@@ -919,7 +1005,11 @@ var reports = {
     "reports.backfill.proposal.evidence": "Evidence: {files}",
     "reports.backfill.proposal.quote": 'Quote (`{file}`): "{text}"',
     "reports.backfill.proposal.dropped": "Dropped by verification ({n})",
-    "reports.backfill.proposal.noneDropped": "_None._"
+    "reports.backfill.proposal.noneDropped": "_None._",
+    // verify: nothing tested
+    "reports.verify.passIncomplete": "\u26A0 Verification: INCOMPLETE \u2014 it passed, but no tests ran",
+    "reports.verify.noTestScript": '  \xB7 the project has no "test" script, so no tests ran. The agent cannot edit package.json: tell the person.',
+    "reports.verify.noTestFiles": "  \xB7 no tests ran: there are no test files. Write one test per acceptance criterion under tests/."
   }
 };
 
@@ -963,7 +1053,9 @@ var rest = {
     "rest.agent.noArray": "la respuesta no contiene una lista JSON",
     "rest.agent.notValidJson": "la respuesta no es un JSON v\xE1lido",
     "rest.agent.notAnArray": "la respuesta es JSON pero no es una lista",
-    "rest.agent.unknown": "error desconocido"
+    "rest.agent.unknown": "error desconocido",
+    "rest.agent.needsLogin": "{bin} no tiene la sesi\xF3n iniciada. Abre `claude`, escribe /login y vuelve a ejecutar este comando.",
+    "rest.agent.notInstalled": "No se encontr\xF3 {bin}: Claude Code no est\xE1 instalado (o no est\xE1 en el PATH). Inst\xE1lalo y vuelve a ejecutar este comando."
   },
   en: {
     "rest.spec.invalid": "Invalid Build-Ready Spec: {why}",
@@ -999,7 +1091,9 @@ var rest = {
     "rest.agent.noArray": "the answer contains no JSON array",
     "rest.agent.notValidJson": "the answer is not valid JSON",
     "rest.agent.notAnArray": "the answer is JSON but not an array",
-    "rest.agent.unknown": "unknown error"
+    "rest.agent.unknown": "unknown error",
+    "rest.agent.needsLogin": "{bin} is not logged in. Open `claude`, type /login, and run this command again.",
+    "rest.agent.notInstalled": "{bin} was not found: Claude Code is not installed (or not on the PATH). Install it and run this command again."
   }
 };
 
@@ -1022,7 +1116,7 @@ var messages = {
   "wizard.cancelled": ["Cancelado.", "Cancelled."],
   "wizard.cancelled.interview": ["Cancelaste la pregunta inicial.", "Interview cancelled."],
   "wizard.mode.heading.title": ["\xBFQu\xE9 quieres hacer?", "What do you want to do?"],
-  "wizard.mode.heading.tagline": ["Empezar de cero, continuar un proyecto de Genesis o adoptar un repositorio que ya existe.", "Start fresh, continue a Genesis project, or adopt an existing repo."],
+  "wizard.mode.heading.tagline": ["Empezar algo nuevo, seguir con un proyecto que Genesis ya prepar\xF3, o adoptar una carpeta con un proyecto que ya tienes para a\xF1adirle las protecciones de Genesis.", "Start something new, keep going on a project Genesis already set up, or adopt a folder with a project you already have to add Genesis\u2019s guardrails to it."],
   "wizard.mode.message": ["\xBFQu\xE9 quieres hacer?", "What do you want to do?"],
   "wizard.mode.new.title": ["Empezar algo nuevo", "Start something new"],
   "wizard.mode.new.description": ["Crear un espacio de trabajo nuevo y construir desde cero", "Create a fresh workspace and build from scratch"],
@@ -1038,7 +1132,7 @@ var messages = {
   "wizard.new.scaffold.title": ["Crear el proyecto", "Scaffold"],
   "wizard.new.scaffold.tagline": ["Ponerle nombre, elegir una carpeta y conectarlo todo.", "Naming it, choosing a folder, then wiring it up."],
   "wizard.launch.title": ["Empezar", "Launch"],
-  "wizard.launch.tagline": ["Pasar el control a tu agente de programaci\xF3n (acepta las ediciones solo; el vigilante sigue mandando).", "Hand off to your coding agent (auto-accepts edits; the guard still governs)."],
+  "wizard.launch.tagline": ["Te paso a tu agente de programaci\xF3n en tu proyecto. Hace los cambios sin pedirte permiso en cada uno, y las protecciones de Genesis siguen activas.", "Handing you to your coding agent in your project. It makes edits without asking each time, and Genesis\u2019s safety checks stay on."],
   "wizard.launch.refreshTagline": ["Pasar el control a tu agente de programaci\xF3n en tu proyecto.", "Hand off to your coding agent in your project."],
   "wizard.refresh.title": ["Actualizar las protecciones", "Refresh guardrails"],
   "wizard.refresh.tagline": ["Poniendo al d\xEDa el vigilante y la estructura de planificaci\xF3n.", "Bringing the guard and planning scaffolding up to date."],
@@ -1148,6 +1242,7 @@ var messages = {
   "wizard.preflight.agent.failed": ["La instalaci\xF3n de {name} no se complet\xF3: inst\xE1lalo a mano: {cmd}", "The {name} CLI install did not complete \u2014 install it by hand: {cmd}"],
   "wizard.preflight.agent.noLogin": ["{name} est\xE1 instalado, pero no has iniciado sesi\xF3n.", "The {name} CLI is installed but not signed in."],
   "wizard.preflight.agent.loginConfirm": ["\xBFIniciar sesi\xF3n en {name} ahora?", "Sign in to {name} now?"],
+  "wizard.preflight.agent.stillNoLogin": ["Todav\xEDa no se ve la sesi\xF3n iniciada en {name}. Seguimos: si hace falta, inicia sesi\xF3n cuando se abra.", "Still not seeing a signed-in {name}. Continuing; if needed, sign in when it opens."],
   "wizard.preflight.agent.ok": ["{name} est\xE1 instalado y con la sesi\xF3n iniciada.", "The {name} CLI is installed and signed in."],
   "wizard.preflight.brew.announce": ["Comprobando Homebrew", "Checking for Homebrew"],
   "wizard.preflight.brew.why": ["Homebrew es el administrador de paquetes de macOS que Genesis usa para instalar herramientas de desarrollo como la CLI de GitHub.", "Homebrew is the macOS package manager Genesis uses to install developer tools like the GitHub CLI."],
@@ -1184,11 +1279,13 @@ var messages = {
   "wizard.preflight.net.online": ["Est\xE1s conectado a internet.", "You are online."],
   "wizard.preflight.version.announce": ["Buscando una versi\xF3n m\xE1s nueva de Genesis", "Checking for a newer Genesis"],
   "wizard.preflight.version.why": ["Para que siempre tengas las \xFAltimas protecciones y plantillas de proyecto.", "So you always get the latest guardrails and project templates."],
-  "wizard.preflight.version.none": ["Todav\xEDa no hay una versi\xF3n publicada con la que comparar: la damos por al d\xEDa.", "No published release to compare against yet \u2014 treating this as up to date."],
+  "wizard.preflight.version.none": ["No hay una versi\xF3n publicada con la que comparar desde aqu\xED: seguimos con esta.", "There is no published version to compare against from here \u2014 continuing with this one."],
+  "wizard.preflight.version.unknown": ["No se pudo comprobar si hay una versi\xF3n nueva de Genesis (\xBFsin acceso al repositorio?). Seguimos con esta.", "Couldn\u2019t check for a newer Genesis (no access to the repository?). Continuing with this one."],
   "wizard.preflight.version.newer": ["Hay una versi\xF3n nueva de Genesis ({version}).", "A newer Genesis is available ({version})."],
   "wizard.preflight.version.current": ["Genesis est\xE1 al d\xEDa.", "Genesis is up to date."],
   // ── Self-update (update/selfUpdate.ts) ──────────────────────────────────────
   "wizard.update.fetchFailed": ["No se pudieron descargar las actualizaciones; seguimos con la versi\xF3n actual.", "Could not fetch updates; continuing with the current version."],
+  "wizard.update.restart": ["Genesis se actualiz\xF3. Ci\xE9rralo y vuelve a abrirlo para usar la versi\xF3n nueva.", "Genesis was updated. Close it and open it again to use the new version."],
   "wizard.update.updated": ["Genesis se actualiz\xF3 a {tag}.", "Updated Genesis to {tag}."],
   "wizard.update.switchFailed": ["No se pudo cambiar a {tag}; seguimos con la versi\xF3n actual.", "Could not switch to {tag}; continuing with the current version."],
   "wizard.update.redownload": ["Hay una versi\xF3n nueva de Genesis ({tag}). Desc\xE1rgala de nuevo desde GitHub para actualizar.", "A newer Genesis ({tag}) is available. Re-download it from GitHub to update."],
@@ -1218,7 +1315,7 @@ var messages = {
   "wizard.inspect.unrecognized": ["tecnolog\xEDa no reconocida", "unrecognized stack"],
   // ── Launch, workspace, design system ────────────────────────────────────────
   "wizard.launch.confirm": ["\xBFEmpezar a trabajar ahora?", "Start working now?"],
-  "wizard.launch.ready": ['Tu espacio de trabajo est\xE1 listo en {dir}. Cuando quieras empezar, ejecuta "{bin}" ah\xED.', 'Your workspace is ready at {dir}. Run "{bin}" there whenever you want to start.'],
+  "wizard.launch.ready": ['Tu espacio de trabajo est\xE1 listo en {dir}. Para empezar, ejecuta: cd "{dir}" && {bin}', 'Your workspace is ready at {dir}. To start, run: cd "{dir}" && {bin}'],
   "wizard.launch.handoff": ["Pasando el control a {name} en {dir} ...", "Handing off to {name} in {dir} ..."],
   "wizard.workspace.name.step": ["Ponle nombre al proyecto", "Name this project"],
   "wizard.workspace.name.why": ["Un nombre corto para su carpeta y su paquete; tu descripci\xF3n completa queda en AGENTS.md.", "A short code name for its folder and package \u2014 your full description stays in AGENTS.md."],
@@ -1226,6 +1323,12 @@ var messages = {
   "wizard.workspace.root.step": ["\xBFD\xF3nde quieres guardar tus proyectos?", "Where should your projects be saved?"],
   "wizard.workspace.root.why": ["Escribe la RUTA de una carpeta: esta no es una pregunta de s\xED o no. Pulsa Enter para usar {path}, o escribe otra carpeta. Cada proyecto tiene su propia subcarpeta dentro.", "Type a FOLDER PATH \u2014 this is not a yes/no question. Press Enter to use {path}, or type a different folder. Each project gets its own subfolder inside it."],
   "wizard.workspace.root.question": ["Carpeta de proyectos (Enter para aceptar)", "Projects folder (Enter to accept)"],
+  "wizard.workspace.summary": ['Voy a crear el proyecto "{name}" en {path}. \xBFTe parece bien?', 'I will create the project "{name}" in {path}. Sound good?'],
+  "wizard.workspace.summary.ok": ["S\xED, crearlo", "Yes, create it"],
+  "wizard.workspace.summary.change": ["Cambiar el nombre o la carpeta", "Change the name or folder"],
+  "wizard.workspace.notWritable": ["No se pudo crear la carpeta {path}. Revisa los permisos o elige otra carpeta.", "Couldn\u2019t create the folder {path}. Check its permissions or choose another folder."],
+  "wizard.folder.fallback": ["No pude usar ninguna de esas rutas. Uso la carpeta por defecto: {path}.", "None of those paths worked. Using the default folder: {path}."],
+  "wizard.folder.notAbsolute": ['Escribe la ruta completa (empieza por / o ~): "{input}" no sirve.', 'Type the full path (starting with / or ~): "{input}" won\u2019t work.'],
   "wizard.workspace.using": ["Usando {path}", "Using {path}"],
   "wizard.workspace.created": ["Se cre\xF3 {path}", "Created {path}"],
   "wizard.design.step": ["Sistema de dise\xF1o (opcional)", "Design system (optional)"],
@@ -1235,8 +1338,10 @@ var messages = {
   "wizard.design.no": ["Ninguno, decidir el aspecto en cada proyecto", "None, decide the look per project"],
   "wizard.design.none": ["Sin sistema de dise\xF1o. Genesis definir\xE1 el aspecto contigo en cada proyecto.", "No design system. Genesis will shape the look with you per project."],
   "wizard.design.askPath": ["Ruta del repositorio del sistema de dise\xF1o", "Path to the design-system repo"],
-  "wizard.design.noFolder": ["No hay ninguna carpeta en {repo}. Lo dejamos por ahora; config\xFAralo despu\xE9s en el IDE de genesis (Ajustes del sistema de dise\xF1o).", "No folder at {repo}. Skipping for now; set it later in the genesis IDE (Design system settings)."],
+  "wizard.design.noFolder": ["No hay ninguna carpeta en {repo}. Revisa la ruta, o deja vac\xEDo para omitirlo.", "No folder at {repo}. Check the path, or leave it blank to skip."],
   "wizard.design.skipped": ["Omitido. Config\xFAralo despu\xE9s en el IDE de genesis (Ajustes del sistema de dise\xF1o).", "Skipped. Set it later in the genesis IDE (Design system settings)."],
+  "wizard.design.unsafe": ["Esa carpeta no sirve: tu carpeta personal (o la ra\xEDz del disco) no es un repositorio de sistema de dise\xF1o. Indica la carpeta del repositorio, o deja vac\xEDo para omitirlo.", "That folder will not work: your home folder (or the disk root) is not a design-system repo. Give the repo folder, or leave it blank to skip."],
+  "wizard.design.notGit": ["{repo} no es un repositorio git (no tiene carpeta .git). Indica la carpeta del repositorio, o deja vac\xEDo para omitirlo.", "{repo} is not a git repository (it has no .git folder). Give the repo folder, or leave it blank to skip."],
   "wizard.design.askBranch": ["Rama desde la que sincronizar siempre", "Branch to always sync from"],
   "wizard.design.set": ["Sistema de dise\xF1o: {path} ({branch})", "Design system: {path} ({branch})"],
   // ── Guard status (guard/status.ts: the IDE shows these) ─────────────────────
@@ -1953,11 +2058,152 @@ ${r.buildOutput}` : ""}`;
   return lines.join("\n");
 }
 
+// src/initiatives/decisions.ts
+import { existsSync as existsSync4, readdirSync as readdirSync3, readFileSync as readFileSync4, writeFileSync as writeFileSync3 } from "node:fs";
+import { createHash as createHash2 } from "node:crypto";
+import { join as join5 } from "node:path";
+function changeDir(openspecDir2, id) {
+  const active = join5(openspecDir2, "changes", id);
+  if (existsSync4(active)) return active;
+  const archive = join5(openspecDir2, "changes", "archive");
+  try {
+    const hit = readdirSync3(archive).filter((n) => new RegExp(`^\\d{4}-\\d{2}-\\d{2}-${id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`).test(n)).sort().pop();
+    if (hit) return join5(archive, hit);
+  } catch {
+  }
+  return active;
+}
+var isArchived = (dir) => dir.includes(`${join5("changes", "archive")}`);
+var decisionsPath = (openspecDir2, id) => join5(changeDir(openspecDir2, id), "decisions.md");
+function statePath(openspecDir2, id) {
+  const p = join5(changeDir(openspecDir2, id), "state.yaml");
+  if (!existsSync4(p)) throw new Error(t("helper.err.noInitiative", { id }));
+  return p;
+}
+function staleEntries(yaml) {
+  const out2 = [];
+  let inBlock = false;
+  for (const line of yaml.split("\n")) {
+    if (/^stale:/.test(line)) {
+      inBlock = true;
+      continue;
+    }
+    if (!inBlock) continue;
+    const m = line.match(/^\s+-\s+(.+?)\s*$/);
+    if (m) {
+      out2.push(m[1]);
+      continue;
+    }
+    if (/^\S/.test(line)) break;
+  }
+  return out2;
+}
+var staleArtifact = (entry) => entry.split(" :: ")[0];
+function readDecisions(openspecDir2, id) {
+  const p = decisionsPath(openspecDir2, id);
+  if (!existsSync4(p)) return [];
+  return parseDecisions(readFileSync4(p, "utf8"));
+}
+function parseDecisions(text2) {
+  const heads = [...text2.matchAll(/^##\s+(DEC-\S+)\s+—\s+(.+)$/gm)];
+  const out2 = [];
+  for (let i = 0; i < heads.length; i++) {
+    const start = heads[i].index ?? 0;
+    const end = i + 1 < heads.length ? heads[i + 1].index ?? text2.length : text2.length;
+    const block = text2.slice(start, end);
+    const what = block.match(/^-\s*What:\s*(.+)$/m)?.[1]?.trim() ?? "";
+    const affects = (block.match(/^-\s*Affects:\s*(.+)$/m)?.[1] ?? "").split(",").map((s) => s.trim()).filter((s) => s && s !== "(none)");
+    const supersedes = block.match(/^-\s*Supersedes:\s*(DEC-\S+)/m)?.[1];
+    const why = block.match(/^-\s*Why:\s*(.+)$/m)?.[1]?.trim();
+    const rejected = [...block.matchAll(/^-\s*Rejected:\s*(.+)$/gm)].map((m) => m[1].trim());
+    const breaksAt = block.match(/^-\s*Breaks at:\s*(.+)$/m)?.[1]?.trim();
+    const evidence = (block.match(/^-\s*Evidence:\s*(.+)$/m)?.[1] ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+    out2.push({ id: heads[i][1], at: heads[i][2].trim(), what, affects, supersedes, why, rejected, breaksAt, evidence });
+  }
+  return out2;
+}
+var DECISIONS_HEADER = (id) => `# Decisions \u2014 ${id}
+
+Append-only, written by \`genesis decide\` / \`genesis reconcile\` (a hook blocks hand-edits).
+Each record marks its affected artifacts stale in \`state.yaml\` until reconciled.
+`;
+function appendDecision(openspecDir2, id, r) {
+  const p = decisionsPath(openspecDir2, id);
+  const block = [
+    `## ${r.id} \u2014 ${r.at}`,
+    `- What: ${r.what}`,
+    `- Affects: ${r.affects.join(", ") || "(none)"}`,
+    ...r.supersedes ? [`- Supersedes: ${r.supersedes}`] : [],
+    ...r.why ? [`- Why: ${r.why}`] : [],
+    ...r.rejected.map((x) => `- Rejected: ${x}`),
+    ...r.breaksAt ? [`- Breaks at: ${r.breaksAt}`] : [],
+    ...r.evidence.length ? [`- Evidence: ${r.evidence.join(", ")}`] : [],
+    ""
+  ].join("\n");
+  const base = existsSync4(p) ? readFileSync4(p, "utf8").replace(/\n*$/, "\n") : DECISIONS_HEADER(id);
+  writeFileSync3(p, `${base}
+${block}
+`);
+}
+function addStale(yaml, entries, at) {
+  const present = new Set(staleEntries(yaml).map(staleArtifact));
+  const toAdd = [];
+  for (const entry of entries) {
+    if (present.has(staleArtifact(entry))) continue;
+    present.add(staleArtifact(entry));
+    toAdd.push(`  - ${entry}`);
+  }
+  const stamp = (s) => s.replace(/(^updated:\s*).*$/m, `$1${at}`);
+  if (toAdd.length === 0) return stamp(yaml);
+  const lines = yaml.split("\n");
+  const header = lines.findIndex((l) => /^stale:/.test(l));
+  if (header < 0) return stamp(yaml);
+  let insertAt = header + 1;
+  while (insertAt < lines.length && /^\s+-\s+/.test(lines[insertAt])) insertAt++;
+  lines.splice(insertAt, 0, ...toAdd);
+  return stamp(lines.join("\n"));
+}
+function recordDecision(openspecDir2, id, input) {
+  const sp = statePath(openspecDir2, id);
+  const n = readDecisions(openspecDir2, id).length + 1;
+  const record = {
+    ...input,
+    id: `DEC-${id}-${String(n).padStart(2, "0")}`,
+    rejected: input.rejected ?? [],
+    evidence: input.evidence ?? []
+  };
+  appendDecision(openspecDir2, id, record);
+  const yaml = readFileSync4(sp, "utf8");
+  if (!isArchived(changeDir(openspecDir2, id))) {
+    writeFileSync3(sp, addStale(yaml, input.affects.map((a) => `${a} :: ${record.id}`), input.at));
+  }
+  return record;
+}
+function reconcileArtifact(openspecDir2, id, artifact, at) {
+  const sp = statePath(openspecDir2, id);
+  const yaml = readFileSync4(sp, "utf8");
+  const entry = staleEntries(yaml).find((e) => staleArtifact(e) === artifact);
+  if (!entry) throw new Error(t("helper.err.noStale", { artifact, id }));
+  const next = yaml.split("\n").filter((line) => line.match(/^\s+-\s+(.+?)\s*$/)?.[1] !== entry).join("\n").replace(/(^updated:\s*).*$/m, `$1${at}`);
+  writeFileSync3(sp, next);
+  return { cleared: artifact, entry };
+}
+function decisionHash(d) {
+  const parts = [d.id, d.what, d.why ?? "", ...d.rejected, "|", d.breaksAt ?? "", ...d.evidence, "|", d.supersedes ?? ""];
+  return createHash2("sha256").update(parts.join("\n")).digest("hex").slice(0, 16);
+}
+var END_USER_CHECK = /^End-user check:/i;
+var END_USER_ANSWER = /^End-user check:\s*(done|accepted-risk|not-applicable)\b/i;
+function activeDecisions(decisions) {
+  const replaced = new Set(decisions.flatMap((d) => d.supersedes ? [d.supersedes] : []));
+  return decisions.filter((d) => !replaced.has(d.id));
+}
+
 // src/initiatives/seal.ts
-import { createHash as createHash2, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
-import { existsSync as existsSync4, mkdirSync as mkdirSync3, readFileSync as readFileSync4, writeFileSync as writeFileSync3, chmodSync } from "node:fs";
+import { createHash as createHash3, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { existsSync as existsSync5, mkdirSync as mkdirSync3, readFileSync as readFileSync5, writeFileSync as writeFileSync4, chmodSync } from "node:fs";
 import { homedir as homedir2 } from "node:os";
-import { dirname as dirname4, join as join5 } from "node:path";
+import { dirname as dirname4, join as join6 } from "node:path";
 
 // src/initiatives/stateYaml.ts
 var CONTROL = /[\u0000-\u001f\u007f\u0085\u2028\u2029]/;
@@ -2056,7 +2302,7 @@ var BLOCK_OF = {
   gate: "infra"
 };
 var field = (text2, k) => blockField(text2, BLOCK_OF[k], k);
-var approvalsDigest = (text2) => createHash2("sha256").update(JSON.stringify(blockItems(text2, "approvals") ?? ["<duplicate approvals block>"])).digest("hex");
+var approvalsDigest = (text2) => createHash3("sha256").update(JSON.stringify(blockItems(text2, "approvals") ?? ["<duplicate approvals block>"])).digest("hex");
 function sealedFields(stateText) {
   return [
     field(stateText, "proposal"),
@@ -2068,11 +2314,11 @@ function sealedFields(stateText) {
   ];
 }
 var sealedFieldsV2 = (stateText) => [...sealedFields(stateText), approvalsDigest(stateText)];
-var sealKeyPath = () => join5(homedir2(), ".genesis", "seal.key");
-var sealPath = (openspecDir2, id) => join5(dirname4(openspecDir2), ".genesis", "seals", `${id}.json`);
+var sealKeyPath = () => join6(homedir2(), ".genesis", "seal.key");
+var sealPath = (openspecDir2, id) => join6(dirname4(openspecDir2), ".genesis", "seals", `${id}.json`);
 function readKey() {
   try {
-    const hex = readFileSync4(sealKeyPath(), "utf8").trim();
+    const hex = readFileSync5(sealKeyPath(), "utf8").trim();
     return /^[0-9a-f]{64}$/.test(hex) ? Buffer.from(hex, "hex") : void 0;
   } catch {
     return void 0;
@@ -2084,7 +2330,7 @@ function loadOrCreateKey() {
   const p = sealKeyPath();
   mkdirSync3(dirname4(p), { recursive: true });
   const key = randomBytes(32);
-  writeFileSync3(p, `${key.toString("hex")}
+  writeFileSync4(p, `${key.toString("hex")}
 `, { mode: 384 });
   chmodSync(p, 384);
   return key;
@@ -2093,26 +2339,26 @@ function deriveSecret(label) {
   return createHmac("sha256", loadOrCreateKey()).update(`genesis:${label}`).digest();
 }
 var sign = (key, id, fields) => createHmac("sha256", key).update([id, ...fields].join("\n")).digest("hex");
-var statePathOf = (openspecDir2, id) => join5(openspecDir2, "changes", id, "state.yaml");
+var statePathOf = (openspecDir2, id) => join6(openspecDir2, "changes", id, "state.yaml");
 function writeSeal(openspecDir2, id) {
-  const text2 = readFileSync4(statePathOf(openspecDir2, id), "utf8");
+  const text2 = readFileSync5(statePathOf(openspecDir2, id), "utf8");
   const p = sealPath(openspecDir2, id);
   mkdirSync3(dirname4(p), { recursive: true });
-  writeFileSync3(p, `${JSON.stringify({ id, v: 2, sig: sign(loadOrCreateKey(), id, sealedFieldsV2(text2)) })}
+  writeFileSync4(p, `${JSON.stringify({ id, v: 2, sig: sign(loadOrCreateKey(), id, sealedFieldsV2(text2)) })}
 `);
 }
 function checkSeal(openspecDir2, id) {
   const p = sealPath(openspecDir2, id);
-  if (!existsSync4(p)) return "missing";
+  if (!existsSync5(p)) return "missing";
   const key = readKey();
   if (!key) return "nokey";
   let saved;
   try {
-    saved = JSON.parse(readFileSync4(p, "utf8"));
+    saved = JSON.parse(readFileSync5(p, "utf8"));
   } catch {
     return "mismatch";
   }
-  const text2 = readFileSync4(statePathOf(openspecDir2, id), "utf8");
+  const text2 = readFileSync5(statePathOf(openspecDir2, id), "utf8");
   const want = Buffer.from(sign(key, id, saved.v === 2 ? sealedFieldsV2(text2) : sealedFields(text2)), "hex");
   const have = Buffer.from(String(saved.sig ?? ""), "hex");
   return have.length === want.length && timingSafeEqual(have, want) ? "ok" : "mismatch";
@@ -2125,8 +2371,8 @@ function assertSealIntact(openspecDir2, id) {
 }
 
 // src/initiatives/ledger.ts
-import { existsSync as existsSync5, mkdirSync as mkdirSync4, readdirSync as readdirSync3, readFileSync as readFileSync5, renameSync, writeFileSync as writeFileSync4 } from "node:fs";
-import { join as join6 } from "node:path";
+import { existsSync as existsSync6, mkdirSync as mkdirSync4, readdirSync as readdirSync4, readFileSync as readFileSync6, renameSync, writeFileSync as writeFileSync5 } from "node:fs";
+import { join as join7 } from "node:path";
 
 // src/scaffold/templates.ts
 function slugify(input) {
@@ -2465,8 +2711,8 @@ function readField(yaml, key) {
   return topField(yaml, key);
 }
 function stateFile(openspecDir2, id) {
-  const p = join6(openspecDir2, CHANGES, id, "state.yaml");
-  if (!existsSync5(p)) throw new Error(t("helper.err.noInitiative", { id }));
+  const p = join7(openspecDir2, CHANGES, id, "state.yaml");
+  if (!existsSync6(p)) throw new Error(t("helper.err.noInitiative", { id }));
   return p;
 }
 function recordApproval(yaml, entry, at) {
@@ -2477,40 +2723,40 @@ function recordApproval(yaml, entry, at) {
 function createChange(openspecDir2, title, updated) {
   if (hasControlChars(title)) throw new Error(t("helper.change.titleControlChars"));
   const id = changeId(title);
-  const dir = join6(openspecDir2, CHANGES, id);
-  if (existsSync5(dir)) return { id, dir, created: false };
+  const dir = join7(openspecDir2, CHANGES, id);
+  if (existsSync6(dir)) return { id, dir, created: false };
   const input = { id, title };
-  mkdirSync4(join6(dir, "specs"), { recursive: true });
-  writeFileSync4(join6(dir, "state.yaml"), renderStateYaml({ ...input, updated }));
-  writeFileSync4(join6(dir, "loop-contract.md"), renderLoopContract(input));
-  writeFileSync4(join6(dir, "proposal.md"), renderProposal(input));
-  writeFileSync4(join6(dir, "tasks.md"), renderTasks(input));
+  mkdirSync4(join7(dir, "specs"), { recursive: true });
+  writeFileSync5(join7(dir, "state.yaml"), renderStateYaml({ ...input, updated }));
+  writeFileSync5(join7(dir, "loop-contract.md"), renderLoopContract(input));
+  writeFileSync5(join7(dir, "proposal.md"), renderProposal(input));
+  writeFileSync5(join7(dir, "tasks.md"), renderTasks(input));
   writeSeal(openspecDir2, id);
   return { id, dir, created: true };
 }
 function readBoard(openspecDir2) {
-  const changesDir = join6(openspecDir2, CHANGES);
+  const changesDir = join7(openspecDir2, CHANGES);
   let entries;
   try {
-    entries = readdirSync3(changesDir);
+    entries = readdirSync4(changesDir);
   } catch {
     return [];
   }
   const rows = [];
   for (const id of entries.sort()) {
     if (id === "archive") continue;
-    const dir = join6(changesDir, id);
-    const statePath2 = join6(dir, "state.yaml");
-    if (!existsSync5(statePath2)) continue;
-    const yaml = readFileSync5(statePath2, "utf8");
+    const dir = join7(changesDir, id);
+    const statePath2 = join7(dir, "state.yaml");
+    if (!existsSync6(statePath2)) continue;
+    const yaml = readFileSync6(statePath2, "utf8");
     const proposal = readField(yaml, "proposal") || "pending";
     const implementation = readField(yaml, "implementation") || "pending";
     const design = readField(yaml, "design") || "n/a";
     const designNeed = readField(yaml, "need") || "none";
-    const specsDir = join6(dir, SPECS);
-    const hasSpecDeltas = existsSync5(specsDir) && readdirSync3(specsDir).some((f) => f.endsWith(".md"));
-    const tasksPath = join6(dir, "tasks.md");
-    const hasTasks = existsSync5(tasksPath) && hasRealTasks(readFileSync5(tasksPath, "utf8"));
+    const specsDir = join7(dir, SPECS);
+    const hasSpecDeltas = existsSync6(specsDir) && readdirSync4(specsDir).some((f) => f.endsWith(".md"));
+    const tasksPath = join7(dir, "tasks.md");
+    const hasTasks = existsSync6(tasksPath) && hasRealTasks(readFileSync6(tasksPath, "utf8"));
     rows.push({
       id: readField(yaml, "change") || id,
       title: readField(yaml, "title"),
@@ -2528,7 +2774,7 @@ function readBoard(openspecDir2) {
 function approveGate(openspecDir2, id, gate, approval, state = "approved", note) {
   assertSealIntact(openspecDir2, id);
   const statePath2 = stateFile(openspecDir2, id);
-  const yaml = readFileSync5(statePath2, "utf8");
+  const yaml = readFileSync6(statePath2, "utf8");
   if (!blockField(yaml, "gates", gate)) throw new Error(t("helper.err.noGate", { gate, id }));
   const reason = note?.replace(/\s+/g, " ").trim();
   const next = recordApproval(
@@ -2536,28 +2782,93 @@ function approveGate(openspecDir2, id, gate, approval, state = "approved", note)
     `${gate} ${state} by ${approval.by} on ${approval.at}${reason ? ` \u2014 ${reason}` : ""}`,
     approval.at
   );
-  writeFileSync4(statePath2, next);
+  writeFileSync5(statePath2, next);
   writeSeal(openspecDir2, id);
+}
+function mdSections(md) {
+  const out2 = /* @__PURE__ */ new Map();
+  let name;
+  let body = [];
+  const flush = () => {
+    if (name !== void 0) out2.set(name, body.join("\n"));
+  };
+  for (const line of md.split("\n")) {
+    const m = line.match(/^## (.+?)\s*$/);
+    if (m) {
+      flush();
+      name = m[1];
+      body = [];
+    } else body.push(line);
+  }
+  flush();
+  return out2;
+}
+var GATE_SECTIONS = {
+  proposal: [{ file: "proposal.md", render: renderProposal, sections: ["Intent", "Scope", "Approach", "Success criteria"] }],
+  implementation: [{ file: "loop-contract.md", render: renderLoopContract, sections: ["Goal", "Acceptance criteria"] }]
+};
+function planGateBlockers(openspecDir2, id, gate) {
+  const dir = join7(openspecDir2, CHANGES, id);
+  const reasons = [];
+  for (const spec of GATE_SECTIONS[gate] ?? []) {
+    const path = join7(dir, spec.file);
+    if (!existsSync6(path)) continue;
+    const skeleton = mdSections(spec.render({ id: "x", title: "x" }));
+    const actual = mdSections(readFileSync6(path, "utf8"));
+    for (const name of spec.sections) {
+      const body = actual.get(name);
+      if (body === void 0) {
+        reasons.push(t("helper.blocker.section", { file: spec.file, section: name }));
+        continue;
+      }
+      const placeholders = (skeleton.get(name) ?? "").split("\n").map((l) => l.trim()).filter((l) => /<[^>]+>/.test(l));
+      const lines = body.split("\n").map((l) => l.trim());
+      if (!body.trim() || placeholders.some((p) => lines.includes(p))) {
+        reasons.push(t("helper.blocker.section", { file: spec.file, section: name }));
+      }
+    }
+  }
+  if (gate === "implementation") {
+    const tasks = join7(dir, "tasks.md");
+    if (existsSync6(tasks) && !hasRealTasks(readFileSync6(tasks, "utf8"))) reasons.push(t("helper.blocker.noTasks"));
+  }
+  return reasons;
+}
+var BREAKPOINT_MAX = 300;
+function addBreakpoint(openspecDir2, id, text2, at) {
+  const statePath2 = stateFile(openspecDir2, id);
+  const clean = text2.replace(/[\u0000-\u001f\u007f\u0085\u2028\u2029]+/g, " ").replace(/\s+/g, " ").trim();
+  if (!clean) throw new Error(t("helper.err.breakpointEmpty"));
+  if (clean.length > BREAKPOINT_MAX) throw new Error(t("helper.err.breakpointLong", { max: BREAKPOINT_MAX }));
+  const lines = readFileSync6(statePath2, "utf8").split("\n");
+  const heads = lines.flatMap((l, i) => /^breakpoints:/.test(l) ? [i] : []);
+  if (heads.length !== 1) throw new Error(t("helper.err.breakpointBlock", { id }));
+  const head = heads[0];
+  lines[head] = lines[head].replace(/^breakpoints:\s*\[\s*\]/, "breakpoints:");
+  let last = head;
+  for (let i = head + 1; i < lines.length && /^\s+-\s/.test(lines[i]); i++) last = i;
+  lines.splice(last + 1, 0, `  - ${yamlString(`${at} \u2014 ${clean}`)}`);
+  writeFileSync5(statePath2, lines.join("\n").replace(/(^updated:\s*).*$/m, `$1${at}`));
 }
 var INFRA_RANK = { none: 0, project: 1, shared: 2 };
 var isInfraLowering = (current, next) => (INFRA_RANK[next] ?? 0) < (INFRA_RANK[current || "none"] ?? 0);
 function setInfra(openspecDir2, id, scope, approval) {
   assertSealIntact(openspecDir2, id);
   const statePath2 = stateFile(openspecDir2, id);
-  const yaml = readFileSync5(statePath2, "utf8");
+  const yaml = readFileSync6(statePath2, "utf8");
   const current = readField(yaml, "scope") || "none";
   const lowering = isInfraLowering(current, scope);
   if (lowering && !approval) throw new Error(t("helper.err.infraLowerNeedsHuman", { id, from: current, to: scope }));
   const gateVal = scope === "project" ? "pending" : "n/a";
   let next = setBlockField(setBlockField(yaml, "infra", "scope", scope), "infra", "gate", gateVal);
   if (lowering && approval) next = recordApproval(next, `infra scope lowered ${current} -> ${scope} by ${approval.by} on ${approval.at}`, approval.at);
-  writeFileSync4(statePath2, next);
+  writeFileSync5(statePath2, next);
   writeSeal(openspecDir2, id);
 }
 function acceptInfra(openspecDir2, id, approval) {
   assertSealIntact(openspecDir2, id);
   const statePath2 = stateFile(openspecDir2, id);
-  const yaml = readFileSync5(statePath2, "utf8");
+  const yaml = readFileSync6(statePath2, "utf8");
   const scope = readField(yaml, "scope");
   if (scope !== "project") {
     throw new Error(
@@ -2569,7 +2880,7 @@ function acceptInfra(openspecDir2, id, approval) {
     `infra (project) accepted by ${approval.by} on ${approval.at}`,
     approval.at
   );
-  writeFileSync4(statePath2, next);
+  writeFileSync5(statePath2, next);
   writeSeal(openspecDir2, id);
 }
 var DESIGN_SOURCE_BLOCK = `designSource:
@@ -2595,26 +2906,26 @@ function ensureDesignFields(yaml) {
   return out2;
 }
 function syncDesignGates(openspecDir2, gateOn) {
-  const changesDir = join6(openspecDir2, "changes");
+  const changesDir = join7(openspecDir2, "changes");
   let entries;
   try {
-    entries = readdirSync3(changesDir);
+    entries = readdirSync4(changesDir);
   } catch {
     return [];
   }
   const moved = [];
   for (const id of entries.sort()) {
     if (id === "archive") continue;
-    const path = join6(changesDir, id, "state.yaml");
-    if (!existsSync5(path)) continue;
-    const yaml = readFileSync5(path, "utf8");
+    const path = join7(changesDir, id, "state.yaml");
+    if (!existsSync6(path)) continue;
+    const yaml = readFileSync6(path, "utf8");
     const current = readField(yaml, "design") || "n/a";
     if ((readField(yaml, "need") || "none") !== "ui") continue;
     const next = gateOn ? current === "off" ? "pending" : current : current === "pending" || current === "changes-requested" ? "off" : current;
     if (next === current) continue;
     const sealed = checkSeal(openspecDir2, id);
     if (sealed === "mismatch" || sealed === "nokey") continue;
-    writeFileSync4(
+    writeFileSync5(
       path,
       setBlockField(yaml, "gates", "design", next).replace(
         "# n/a (no UI) | pending | approved | changes-requested",
@@ -2633,23 +2944,23 @@ function setDesignField(yaml, key, value) {
 function setDesignNeed(openspecDir2, id, need) {
   assertSealIntact(openspecDir2, id);
   const statePath2 = stateFile(openspecDir2, id);
-  let yaml = ensureDesignFields(readFileSync5(statePath2, "utf8"));
+  let yaml = ensureDesignFields(readFileSync6(statePath2, "utf8"));
   const current = readField(yaml, "design") || "n/a";
   const nextGate = need === "ui" ? current === "n/a" ? "pending" : current : "n/a";
   yaml = setBlockField(setBlockField(yaml, "gates", "design", nextGate), "designSource", "need", need);
-  writeFileSync4(statePath2, yaml);
+  writeFileSync5(statePath2, yaml);
   writeSeal(openspecDir2, id);
 }
 function recordDesign(openspecDir2, id, source, at) {
   assertSealIntact(openspecDir2, id);
   const statePath2 = stateFile(openspecDir2, id);
-  let yaml = ensureDesignFields(readFileSync5(statePath2, "utf8"));
+  let yaml = ensureDesignFields(readFileSync6(statePath2, "utf8"));
   const current = readField(yaml, "design") || "n/a";
   const resetApproval = current === "approved";
   const gate = current === "approved" || current === "n/a" || current === "waived" ? "pending" : current;
   for (const [k, v] of Object.entries(source)) yaml = setDesignField(yaml, k, v);
   yaml = setBlockField(setBlockField(yaml, "designSource", "need", "ui"), "gates", "design", gate).replace(/(^updated:\s*).*$/m, `$1${at}`);
-  writeFileSync4(statePath2, yaml);
+  writeFileSync5(statePath2, yaml);
   writeSeal(openspecDir2, id);
   return { resetApproval };
 }
@@ -2668,7 +2979,7 @@ function designGateSignable(openspecDir2, id) {
   return { ok: true };
 }
 function readDesignSource(openspecDir2, id) {
-  const yaml = readFileSync5(stateFile(openspecDir2, id), "utf8");
+  const yaml = readFileSync6(stateFile(openspecDir2, id), "utf8");
   return {
     need: readField(yaml, "need") || "none",
     system: readField(yaml, "system"),
@@ -2682,29 +2993,38 @@ function readDesignSource(openspecDir2, id) {
 function foldSpecs(openspecDir2, srcSpecsDir) {
   const created = [];
   const updated = [];
-  if (!existsSync5(srcSpecsDir)) return { created, updated };
-  const canonicalDir = join6(openspecDir2, SPECS);
-  for (const name of readdirSync3(srcSpecsDir).sort()) {
+  if (!existsSync6(srcSpecsDir)) return { created, updated };
+  const canonicalDir = join7(openspecDir2, SPECS);
+  for (const name of readdirSync4(srcSpecsDir).sort()) {
     if (!name.endsWith(".md")) continue;
-    const target = join6(canonicalDir, name);
-    (existsSync5(target) ? updated : created).push(`${SPECS}/${name}`);
+    const target = join7(canonicalDir, name);
+    (existsSync6(target) ? updated : created).push(`${SPECS}/${name}`);
     mkdirSync4(canonicalDir, { recursive: true });
-    writeFileSync4(target, readFileSync5(join6(srcSpecsDir, name), "utf8"));
+    writeFileSync5(target, readFileSync6(join7(srcSpecsDir, name), "utf8"));
   }
   return { created, updated };
 }
-function archiveChange(openspecDir2, id, date) {
-  const src = join6(openspecDir2, CHANGES, id);
-  if (!existsSync5(src)) throw new Error(t("helper.err.noInitiative", { id }));
-  const folded = foldSpecs(openspecDir2, join6(src, SPECS));
+function assertCanArchive(openspecDir2, id, date) {
+  if (!existsSync6(join7(openspecDir2, CHANGES, id))) throw new Error(t("helper.err.noInitiative", { id }));
   const destRel = `${ARCHIVE}/${date}-${id}`;
-  const dest = join6(openspecDir2, destRel);
-  mkdirSync4(join6(openspecDir2, ARCHIVE), { recursive: true });
+  if (existsSync6(join7(openspecDir2, destRel))) throw new Error(t("helper.err.archiveExists", { id, dest: destRel }));
+}
+function archiveBlockers(openspecDir2, id) {
+  const has = activeDecisions(readDecisions(openspecDir2, id)).some((d) => END_USER_ANSWER.test(d.what) && (d.why ?? "").trim());
+  return has ? [] : [t("helper.archive.needsCheck", { id })];
+}
+function archiveChange(openspecDir2, id, date) {
+  const src = join7(openspecDir2, CHANGES, id);
+  assertCanArchive(openspecDir2, id, date);
+  const folded = foldSpecs(openspecDir2, join7(src, SPECS));
+  const destRel = `${ARCHIVE}/${date}-${id}`;
+  const dest = join7(openspecDir2, destRel);
+  mkdirSync4(join7(openspecDir2, ARCHIVE), { recursive: true });
   renameSync(src, dest);
-  const statePath2 = join6(dest, "state.yaml");
-  if (existsSync5(statePath2)) {
-    const yaml = readFileSync5(statePath2, "utf8");
-    writeFileSync4(
+  const statePath2 = join7(dest, "state.yaml");
+  if (existsSync6(statePath2)) {
+    const yaml = readFileSync6(statePath2, "utf8");
+    writeFileSync5(
       statePath2,
       yaml.replace(/(^phase:\s*)\S+/m, "$1archived").replace(/(^updated:\s*).*$/m, `$1${date}`)
     );
@@ -2902,145 +3222,6 @@ function assessEligibility(spec) {
   };
 }
 
-// src/initiatives/decisions.ts
-import { existsSync as existsSync6, readdirSync as readdirSync4, readFileSync as readFileSync6, writeFileSync as writeFileSync5 } from "node:fs";
-import { createHash as createHash3 } from "node:crypto";
-import { join as join7 } from "node:path";
-function changeDir(openspecDir2, id) {
-  const active = join7(openspecDir2, "changes", id);
-  if (existsSync6(active)) return active;
-  const archive = join7(openspecDir2, "changes", "archive");
-  try {
-    const hit = readdirSync4(archive).filter((n) => new RegExp(`^\\d{4}-\\d{2}-\\d{2}-${id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`).test(n)).sort().pop();
-    if (hit) return join7(archive, hit);
-  } catch {
-  }
-  return active;
-}
-var isArchived = (dir) => dir.includes(`${join7("changes", "archive")}`);
-var decisionsPath = (openspecDir2, id) => join7(changeDir(openspecDir2, id), "decisions.md");
-function statePath(openspecDir2, id) {
-  const p = join7(changeDir(openspecDir2, id), "state.yaml");
-  if (!existsSync6(p)) throw new Error(t("helper.err.noInitiative", { id }));
-  return p;
-}
-function staleEntries(yaml) {
-  const out2 = [];
-  let inBlock = false;
-  for (const line of yaml.split("\n")) {
-    if (/^stale:/.test(line)) {
-      inBlock = true;
-      continue;
-    }
-    if (!inBlock) continue;
-    const m = line.match(/^\s+-\s+(.+?)\s*$/);
-    if (m) {
-      out2.push(m[1]);
-      continue;
-    }
-    if (/^\S/.test(line)) break;
-  }
-  return out2;
-}
-var staleArtifact = (entry) => entry.split(" :: ")[0];
-function readDecisions(openspecDir2, id) {
-  const p = decisionsPath(openspecDir2, id);
-  if (!existsSync6(p)) return [];
-  return parseDecisions(readFileSync6(p, "utf8"));
-}
-function parseDecisions(text2) {
-  const heads = [...text2.matchAll(/^##\s+(DEC-\S+)\s+—\s+(.+)$/gm)];
-  const out2 = [];
-  for (let i = 0; i < heads.length; i++) {
-    const start = heads[i].index ?? 0;
-    const end = i + 1 < heads.length ? heads[i + 1].index ?? text2.length : text2.length;
-    const block = text2.slice(start, end);
-    const what = block.match(/^-\s*What:\s*(.+)$/m)?.[1]?.trim() ?? "";
-    const affects = (block.match(/^-\s*Affects:\s*(.+)$/m)?.[1] ?? "").split(",").map((s) => s.trim()).filter((s) => s && s !== "(none)");
-    const supersedes = block.match(/^-\s*Supersedes:\s*(DEC-\S+)/m)?.[1];
-    const why = block.match(/^-\s*Why:\s*(.+)$/m)?.[1]?.trim();
-    const rejected = [...block.matchAll(/^-\s*Rejected:\s*(.+)$/gm)].map((m) => m[1].trim());
-    const breaksAt = block.match(/^-\s*Breaks at:\s*(.+)$/m)?.[1]?.trim();
-    const evidence = (block.match(/^-\s*Evidence:\s*(.+)$/m)?.[1] ?? "").split(",").map((s) => s.trim()).filter(Boolean);
-    out2.push({ id: heads[i][1], at: heads[i][2].trim(), what, affects, supersedes, why, rejected, breaksAt, evidence });
-  }
-  return out2;
-}
-var DECISIONS_HEADER = (id) => `# Decisions \u2014 ${id}
-
-Append-only, written by \`genesis decide\` / \`genesis reconcile\` (a hook blocks hand-edits).
-Each record marks its affected artifacts stale in \`state.yaml\` until reconciled.
-`;
-function appendDecision(openspecDir2, id, r) {
-  const p = decisionsPath(openspecDir2, id);
-  const block = [
-    `## ${r.id} \u2014 ${r.at}`,
-    `- What: ${r.what}`,
-    `- Affects: ${r.affects.join(", ") || "(none)"}`,
-    ...r.supersedes ? [`- Supersedes: ${r.supersedes}`] : [],
-    ...r.why ? [`- Why: ${r.why}`] : [],
-    ...r.rejected.map((x) => `- Rejected: ${x}`),
-    ...r.breaksAt ? [`- Breaks at: ${r.breaksAt}`] : [],
-    ...r.evidence.length ? [`- Evidence: ${r.evidence.join(", ")}`] : [],
-    ""
-  ].join("\n");
-  const base = existsSync6(p) ? readFileSync6(p, "utf8").replace(/\n*$/, "\n") : DECISIONS_HEADER(id);
-  writeFileSync5(p, `${base}
-${block}
-`);
-}
-function addStale(yaml, entries, at) {
-  const present = new Set(staleEntries(yaml).map(staleArtifact));
-  const toAdd = [];
-  for (const entry of entries) {
-    if (present.has(staleArtifact(entry))) continue;
-    present.add(staleArtifact(entry));
-    toAdd.push(`  - ${entry}`);
-  }
-  const stamp = (s) => s.replace(/(^updated:\s*).*$/m, `$1${at}`);
-  if (toAdd.length === 0) return stamp(yaml);
-  const lines = yaml.split("\n");
-  const header = lines.findIndex((l) => /^stale:/.test(l));
-  if (header < 0) return stamp(yaml);
-  let insertAt = header + 1;
-  while (insertAt < lines.length && /^\s+-\s+/.test(lines[insertAt])) insertAt++;
-  lines.splice(insertAt, 0, ...toAdd);
-  return stamp(lines.join("\n"));
-}
-function recordDecision(openspecDir2, id, input) {
-  const sp = statePath(openspecDir2, id);
-  const n = readDecisions(openspecDir2, id).length + 1;
-  const record = {
-    ...input,
-    id: `DEC-${id}-${String(n).padStart(2, "0")}`,
-    rejected: input.rejected ?? [],
-    evidence: input.evidence ?? []
-  };
-  appendDecision(openspecDir2, id, record);
-  const yaml = readFileSync6(sp, "utf8");
-  if (!isArchived(changeDir(openspecDir2, id))) {
-    writeFileSync5(sp, addStale(yaml, input.affects.map((a) => `${a} :: ${record.id}`), input.at));
-  }
-  return record;
-}
-function reconcileArtifact(openspecDir2, id, artifact, at) {
-  const sp = statePath(openspecDir2, id);
-  const yaml = readFileSync6(sp, "utf8");
-  const entry = staleEntries(yaml).find((e) => staleArtifact(e) === artifact);
-  if (!entry) throw new Error(t("helper.err.noStale", { artifact, id }));
-  const next = yaml.split("\n").filter((line) => line.match(/^\s+-\s+(.+?)\s*$/)?.[1] !== entry).join("\n").replace(/(^updated:\s*).*$/m, `$1${at}`);
-  writeFileSync5(sp, next);
-  return { cleared: artifact, entry };
-}
-function decisionHash(d) {
-  const parts = [d.id, d.what, d.why ?? "", ...d.rejected, "|", d.breaksAt ?? "", ...d.evidence, "|", d.supersedes ?? ""];
-  return createHash3("sha256").update(parts.join("\n")).digest("hex").slice(0, 16);
-}
-function activeDecisions(decisions) {
-  const replaced = new Set(decisions.flatMap((d) => d.supersedes ? [d.supersedes] : []));
-  return decisions.filter((d) => !replaced.has(d.id));
-}
-
 // src/initiatives/howItWorks.ts
 import { existsSync as existsSync7, readFileSync as readFileSync7, readdirSync as readdirSync5 } from "node:fs";
 import { createHash as createHash4 } from "node:crypto";
@@ -3158,6 +3339,14 @@ var AgentError = class extends LocalizedError {
     this.name = "AgentError";
   }
 };
+function agentFailureText(e) {
+  if (e instanceof AgentError) {
+    const bin = String(e.vars?.bin ?? "claude");
+    if (e.key === "rest.agent.cannotRun" && /ENOENT/.test(String(e.vars?.why ?? ""))) return t("rest.agent.notInstalled", { bin });
+    if (/not logged in|\/login|authenticat|credential/i.test(String(e.vars?.message ?? ""))) return t("rest.agent.needsLogin", { bin });
+  }
+  return errText(e);
+}
 function runAgent(bin, args, opts) {
   const timeoutMs = opts.timeoutMs ?? 6e5;
   assertNoSecrets([...args, opts.input ?? ""].join("\n"), "send");
@@ -3422,7 +3611,7 @@ async function runClaudeJsonAsync(prompt, schema, bin = "claude", model = "haiku
   assertNoSecrets(prompt, "send");
   const cwd2 = mkdtempSync2(join8(tmpdir2(), "genesis-hiw-"));
   try {
-    const stdout = await new Promise((resolve6, reject) => {
+    const stdout = await new Promise((resolve7, reject) => {
       const child = spawn(bin, claudeArgs(prompt, schema, model), { cwd: cwd2, stdio: ["ignore", "pipe", "pipe"] });
       let out2 = "";
       let err = "";
@@ -3439,7 +3628,7 @@ async function runClaudeJsonAsync(prompt, schema, bin = "claude", model = "haiku
       child.on("close", (code) => {
         clearTimeout(timer);
         if (code !== 0 && out2.trim() === "") reject(new AgentError(err.trim() ? "rest.agent.exited" : "rest.agent.exitedBare", { bin, code: code ?? 0, message: err.trim().slice(0, 200) }));
-        else resolve6(out2);
+        else resolve7(out2);
       });
     });
     let body;
@@ -4123,7 +4312,7 @@ case "sign":
     "design": "the design",
     "design-waive": "a design waiver",
     "infra-accept": "the project infrastructure",
-    "infra-lower": "a LOWER infrastructure scope",
+    "infra-lower": "a LOWER infrastructure scope (this removes a safeguard)",
     "reading": "that you read HOW-IT-WORKS",
   ]
   var ids = Set<String>()
@@ -4148,7 +4337,7 @@ case "sign":
   try? (recent.map { String($0) } + [String(now)]).joined(separator: "\n").write(toFile: ratePath, atomically: true, encoding: .utf8)
 
   guard let blob = fm.contents(atPath: blobPath) else { fail("no signing key yet: run genesis sign setup") }
-  let reason = "Genesis: approve \(what.joined(separator: " + ")) for \u{201C}\(id)\u{201D} (infra scope: \(scope), reviewed content \(digest.prefix(8)))"
+  let reason = "Genesis: approve \(what.joined(separator: " + ")) for \u{201C}\(id)\u{201D} (infra scope: \(scope), reviewed content \(digest.prefix(8))). Touch ONLY if you just asked for this yourself; otherwise cancel."
   let ctx = LAContext()
   var policy = LAPolicy.deviceOwnerAuthenticationWithBiometrics
   if !ctx.canEvaluatePolicy(policy, error: nil) { policy = .deviceOwnerAuthentication }
@@ -4172,14 +4361,14 @@ default:
 `;
 var signingSupported = () => process.platform === "darwin";
 function compileHelper(home = homedir4()) {
-  if (!signingSupported()) return { ok: false, reason: "signed approvals need macOS (the Secure Enclave)" };
+  if (!signingSupported()) return { ok: false, reason: t("helper.signing.needsMac") };
   const tmp = mkdtempSync3(join12(tmpdir3(), "genesis-sign-"));
   try {
     const src = join12(tmp, "main.swift");
     writeFileSync7(src, SIGNER_SWIFT_SOURCE);
     const out2 = join12(tmp, "genesis-sign");
     const r = spawnSync5("xcrun", ["swiftc", "-O", src, "-o", out2], { encoding: "utf8" });
-    if (r.status !== 0) return { ok: false, reason: `could not compile the signing helper (is Xcode's command line toolchain installed? \`xcode-select --install\`): ${(r.stderr || r.error?.message || "").split("\n").slice(0, 3).join(" ")}` };
+    if (r.status !== 0) return { ok: false, reason: t("helper.signing.compileFailed", { detail: (r.stderr || r.error?.message || "").split("\n").slice(0, 3).join(" ") }) };
     spawnSync5("codesign", ["-s", "-", "--force", out2], { encoding: "utf8" });
     const dest = helperPath(home);
     mkdirSync6(dirname6(dest), { recursive: true, mode: 448 });
@@ -4208,7 +4397,7 @@ var HelperSigner = class {
    * IDE calls this from its main process, which must not freeze while a person decides at the sensor.
    */
   signMany(payloads) {
-    return new Promise((resolve6, reject) => {
+    return new Promise((resolve7, reject) => {
       const child = spawn2(helperPath(this.home), ["sign"], { env: { ...process.env, HOME: this.home }, stdio: ["pipe", "pipe", "pipe"] });
       let stdout = "";
       let stderr = "";
@@ -4217,14 +4406,14 @@ var HelperSigner = class {
       child.stderr.on("data", (d) => stderr += d.toString("utf8"));
       child.on("error", (e) => {
         clearTimeout(timer);
-        reject(new Error(`the signing helper could not run: ${e.message}`));
+        reject(new LocalizedError("helper.signing.cannotRun", { why: e.message }));
       });
       child.on("close", (code) => {
         clearTimeout(timer);
-        if (code !== 0) return reject(new Error(stderr.trim() || "the signing helper did not approve"));
+        if (code !== 0) return reject(stderr.trim() ? new Error(stderr.trim()) : new LocalizedError("helper.signing.notApproved"));
         const sigs = stdout.split("\n").filter(Boolean);
-        if (sigs.length !== payloads.length) return reject(new Error("the signing helper returned the wrong number of signatures"));
-        resolve6(sigs.map((s) => Buffer.from(s, "base64")));
+        if (sigs.length !== payloads.length) return reject(new LocalizedError("helper.signing.wrongCount"));
+        resolve7(sigs.map((s) => Buffer.from(s, "base64")));
       });
       child.stdin.end(payloads.map((p) => p.toString("utf8")).join("\n") + "\n");
     });
@@ -4243,7 +4432,7 @@ function signingStatus(projectRoot, home = homedir4()) {
   };
 }
 function setupSigning(projectRoot, home = homedir4(), opts = {}) {
-  if (!signingSupported()) return { ok: false, reason: "signed approvals need macOS (the Secure Enclave)" };
+  if (!signingSupported()) return { ok: false, reason: t("helper.signing.needsMac") };
   if (!helperPresent(home)) {
     const built = compileHelper(home);
     if (!built.ok) return built;
@@ -4259,7 +4448,7 @@ function setupSigning(projectRoot, home = homedir4(), opts = {}) {
   if (existsSync11(tp)) {
     const pin = pinnedKey(projectRoot, home);
     if (pin.mode === "signed" && pin.kid === kid) return { ok: true, kid };
-    return { ok: false, reason: "this project is already pinned to a different key; changing it voids every approval, so it is not done here" };
+    return { ok: false, reason: t("helper.signing.pinnedOther") };
   }
   mkdirSync6(dirname6(tp), { recursive: true });
   writeFileSync7(tp, `${JSON.stringify({ mode: "signed", pub: pub.toString("base64"), kid }, null, 2)}
@@ -4303,6 +4492,8 @@ var CHECK_SCHEMA = {
   required: ["candidates"]
 };
 var eligible = (decisions) => activeDecisions(decisions).filter((d) => Boolean(d.why));
+var hasCheckpointMaterial = (decisions) => eligible(decisions).length > 0;
+var noCheckpointsReason = (decisions) => t(hasCheckpointMaterial(decisions) ? "reports.sign.noKeyYet" : "reports.sign.noDecisions");
 function pickCheckpointDecisions(decisions, rng) {
   const pool2 = eligible(decisions);
   if (pool2.length === 0) return [];
@@ -4465,7 +4656,7 @@ var DOC = "docs/HOW-IT-WORKS.md";
 var SIGNATURE = "docs/.reading-signature.json";
 var sha2562 = (s) => createHash7("sha256").update(s).digest("hex");
 function checkSignable(root, decisions, key, state) {
-  if (key.checkpoints.length === 0) return { ok: false, reason: t("reports.sign.noCheckpoints") };
+  if (key.checkpoints.length === 0) return { ok: false, reason: noCheckpointsReason(decisions) };
   const docPath = join13(root, DOC);
   if (!existsSync12(docPath)) return { ok: false, reason: t("reports.sign.noDoc", { doc: DOC }) };
   const doc = readFileSync12(docPath, "utf8");
@@ -4487,17 +4678,17 @@ function trySign(root, decisions, key, state, now, approval) {
 async function trySignSigned(root, decisions, key, state, now, by, signer, home) {
   const pin = pinnedKey(root, home);
   if (pin.mode === "legacy") return trySign(root, decisions, key, state, now);
-  if (pin.mode === "error") return { ok: false, reason: `signed approvals are set up but cannot be trusted: ${pin.reason}` };
+  if (pin.mode === "error") return { ok: false, reason: t("helper.signed.untrusted", { reason: pin.reason }) };
   const can = checkSignable(root, decisions, key, state);
   if (!can.ok) return can;
   const s = signer ?? (helperPresent(home) ? new HelperSigner(home) : void 0);
-  if (!s) return { ok: false, reason: "this project requires signed approvals but the signing helper is missing: run genesis signing setup" };
-  if (s.kid !== pin.kid) return { ok: false, reason: "the signing key on this machine is not the one this project is pinned to" };
+  if (!s) return { ok: false, reason: t("helper.signed.helperMissing") };
+  if (s.kid !== pin.kid) return { ok: false, reason: t("helper.signed.wrongKey") };
   try {
     const approval = await signReadingApproval(root, s, { by, at: now.toISOString().slice(0, 10) });
     return trySign(root, decisions, key, state, now, approval);
   } catch (e) {
-    return { ok: false, reason: e instanceof Error ? e.message : String(e) };
+    return { ok: false, reason: errText(e) };
   }
 }
 function checkSignature(root, decisions) {
@@ -4663,6 +4854,14 @@ function validateState(state, id, f) {
   return { phase, proposal, implementation, scope, infraGate };
 }
 function validateCoherence(dir, s, id, f) {
+  const trail = blockItems(readFileSync13(join14(dir, "state.yaml"), "utf8"), "approvals") ?? [];
+  for (const gate of ["proposal", "implementation"]) {
+    if (s[gate] !== "approved") continue;
+    const newest = trail.find((l) => l.startsWith(`${gate} approved`)) ?? "";
+    if (newest.includes(" \u2014 ")) continue;
+    const reasons = planGateBlockers(dirname7(dirname7(dir)), id, gate);
+    if (reasons.length > 0) f.error("state.yaml", t("helper.validate.templateGate", { gate, id, reasons: reasons.join(" ") }));
+  }
   if (CODE_PHASES.has(s.phase)) {
     if (s.proposal !== "approved") f.error("state.yaml", t("helper.validate.noCodeBeforeGate1", { phase: s.phase, gate: s.proposal || "pending" }));
     if (s.implementation !== "approved") f.error("state.yaml", t("helper.validate.noCodeBeforeGate2", { phase: s.phase, gate: s.implementation || "pending" }));
@@ -4873,9 +5072,21 @@ function runLedgerCli(argv2, cwd2, date, env = {}) {
       const supersedes = valueOf("--supersedes");
       const rejected = rest2.flatMap((a, i) => a === "--rejected" && rest2[i + 1] ? [rest2[i + 1]] : []);
       const extra = { why: valueOf("--why"), rejected, breaksAt: valueOf("--breaks-at"), evidence: list(valueOf("--evidence")) };
+      if (END_USER_CHECK.test(what)) {
+        if (!END_USER_ANSWER.test(what)) return { code: 1, out: t("helper.decide.endUserAnswer", { id }) };
+        if (!extra.why?.trim()) return { code: 1, out: t("helper.decide.endUserWhy", { id, what }) };
+        const existing = supersedes ? void 0 : activeDecisions(readDecisions(openspecDir2, id)).find((d) => END_USER_CHECK.test(d.what));
+        if (existing) return { code: 1, out: t("helper.decide.endUserExists", { id, existing: existing.id }) };
+      }
       const r = recordDecision(openspecDir2, id, { what, affects, supersedes, ...extra, at: date });
       const key = `helper.decide.recorded${supersedes ? "Supersedes" : ""}${affects.length ? "Stale" : ""}`;
       return { code: 0, out: t(key, { id: r.id, supersedes: supersedes ?? "", affects: affects.join(", ") }) };
+    }
+    if (command === "breakpoint") {
+      const text2 = rest2.join(" ").trim();
+      if (!sub || !text2) return { code: 1, out: t("helper.breakpoint.usage") };
+      addBreakpoint(openspecDir2, sub, text2, date);
+      return { code: 0, out: t("helper.breakpoint.logged", { id: sub }) };
     }
     if (command === "reconcile") {
       const id = sub;
@@ -4894,6 +5105,16 @@ function runLedgerCli(argv2, cwd2, date, env = {}) {
     if (command === "change" && sub === "archive") {
       const id = rest2[0];
       if (!id) return { code: 1, out: t("helper.change.idRequired") };
+      const abandonAt = rest2.indexOf("--abandon");
+      const abandon = abandonAt >= 0 ? (rest2[abandonAt + 1] ?? "").trim() : void 0;
+      if (abandon !== void 0 && abandon.length < 10) return { code: 1, out: t("helper.archive.abandonShort", { id }) };
+      assertCanArchive(openspecDir2, id, date);
+      if (abandon === void 0) {
+        const blockers = archiveBlockers(openspecDir2, id);
+        if (blockers.length) return { code: 1, out: blockers.join("\n") };
+      } else {
+        recordDecision(openspecDir2, id, { what: "Abandoned before delivery", affects: [], why: abandon, at: date });
+      }
       const r = archiveChange(openspecDir2, id, date);
       const folded = r.folded.created.length + r.folded.updated.length;
       return {
@@ -4976,7 +5197,7 @@ ${renderDesignAudit(findings)}` : "")
       const broken = findings.some((x) => x.kind !== "external");
       return { code: broken ? 1 : 0, out: renderDesignAudit(findings) };
     }
-    if (command === "gate" && sub === "approve" || command === "infra" && sub === "accept") {
+    if (command === "gate" && (sub === "approve" || sub === "request-changes") || command === "infra" && sub === "accept") {
       return {
         code: 1,
         out: t("helper.humanApproval", { command, sub })
@@ -4984,7 +5205,7 @@ ${renderDesignAudit(findings)}` : "")
     }
     return { code: command ? 1 : 0, out: usage() };
   } catch (err) {
-    return { code: 1, out: err instanceof Error ? err.message : String(err) };
+    return { code: 1, out: errText(err) };
   }
 }
 
@@ -4992,10 +5213,10 @@ ${renderDesignAudit(findings)}` : "")
 async function prepareSignature(openspecDir2, projectRoot, fields, signer, home) {
   const pin = pinnedKey(projectRoot, home);
   if (pin.mode === "legacy") return void 0;
-  if (pin.mode === "error") throw new Error(`signed approvals are set up but cannot be trusted: ${pin.reason}`);
+  if (pin.mode === "error") throw new LocalizedError("helper.signed.untrusted", { reason: pin.reason });
   const s = signer ?? (helperPresent(home) ? new HelperSigner(home) : void 0);
-  if (!s) throw new Error("this project requires signed approvals but the signing helper is missing: run genesis signing setup");
-  if (s.kid !== pin.kid) throw new Error("the signing key on this machine is not the one this project is pinned to, so it cannot sign for it");
+  if (!s) throw new LocalizedError("helper.signed.helperMissing");
+  if (s.kid !== pin.kid) throw new LocalizedError("helper.signed.wrongKey");
   const record = await signApproval(openspecDir2, s, fields);
   return { commit: () => writeApproval(openspecDir2, record) };
 }
@@ -5418,8 +5639,8 @@ function writeProjectAgents(projectDir, patch) {
 
 // src/initiatives/verify.ts
 import { spawnSync as spawnSync6 } from "node:child_process";
-import { readFileSync as readFileSync16, existsSync as existsSync16 } from "node:fs";
-import { join as join17 } from "node:path";
+import { readFileSync as readFileSync16, existsSync as existsSync16, readdirSync as readdirSync8 } from "node:fs";
+import { dirname as dirname10, join as join17, resolve as resolve6 } from "node:path";
 var STANDARD_GATES = ["typecheck", "lint", "test", "build"];
 function planVerify(scripts = {}) {
   if (scripts.verify) {
@@ -5433,6 +5654,29 @@ function planVerify(scripts = {}) {
   }
   return { gates, skipped, usedProjectVerify: false };
 }
+var TEST_FILE = /\.(test|spec)\.[cm]?[jt]sx?$/;
+var WALK_SKIP = /* @__PURE__ */ new Set(["node_modules", "dist", "openspec", "coverage"]);
+var WALK_CAP = 5e3;
+function findTestFile(root) {
+  let seen = 0;
+  const stack = [root];
+  while (stack.length) {
+    const cur = stack.pop();
+    let entries;
+    try {
+      entries = readdirSync8(cur, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const e of entries) {
+      if (++seen > WALK_CAP) return true;
+      if (e.isDirectory()) {
+        if (!e.name.startsWith(".") && !WALK_SKIP.has(e.name)) stack.push(join17(cur, e.name));
+      } else if (TEST_FILE.test(e.name)) return true;
+    }
+  }
+  return false;
+}
 var nodeVerifyIo = {
   readPkg(dir) {
     const p = join17(dir, "package.json");
@@ -5444,15 +5688,32 @@ var nodeVerifyIo = {
       return null;
     }
   },
+  depsMissing(dir) {
+    try {
+      const pkg = JSON.parse(readFileSync16(join17(dir, "package.json"), "utf8"));
+      const declared = Object.keys(pkg.dependencies ?? {}).length + Object.keys(pkg.devDependencies ?? {}).length > 0;
+      if (!declared) return false;
+      for (let d = resolve6(dir); ; d = dirname10(d)) {
+        if (existsSync16(join17(d, "node_modules"))) return false;
+        if (dirname10(d) === d) return true;
+      }
+    } catch {
+      return false;
+    }
+  },
   // stdio inherited so the loop and the human see the real failure output.
   run(script, dir) {
     return spawnSync6("npm", ["run", script], { cwd: dir, stdio: "inherit" }).status;
-  }
+  },
+  hasTestFiles: findTestFile
 };
 function runVerify(dir, io = nodeVerifyIo) {
   const scripts = io.readPkg(dir);
   if (scripts === null) {
     return { ran: false, ok: false, results: [], skipped: [], plan: planVerify({}), reason: t("reports.verify.noPackageJson") };
+  }
+  if (io.depsMissing?.(dir)) {
+    return { ran: false, ok: false, results: [], skipped: [], plan: planVerify(scripts), reason: t("reports.verify.depsMissing") };
   }
   const plan = planVerify(scripts);
   if (plan.gates.length === 0) {
@@ -5477,17 +5738,25 @@ function runVerify(dir, io = nodeVerifyIo) {
       break;
     }
   }
-  return { ran: true, ok, results, skipped: plan.skipped, plan };
+  const result = { ran: true, ok, results, skipped: plan.skipped, plan };
+  if (ok && !plan.usedProjectVerify) {
+    if (!scripts.test) result.incomplete = "no-test-script";
+    else if (io.hasTestFiles && !io.hasTestFiles(dir)) result.incomplete = "no-test-files";
+  }
+  return result;
 }
 function renderVerify(r) {
   if (!r.ran) return t("reports.verify.didNotRun", { reason: r.reason ?? "" });
   const failed = r.results.find((x) => !x.ok);
-  const lines = [r.ok ? t("reports.verify.pass") : t("reports.verify.fail", { gate: failed?.name ?? "" })];
+  const head = r.ok ? t(r.incomplete ? "reports.verify.passIncomplete" : "reports.verify.pass") : t("reports.verify.fail", { gate: failed?.name ?? "" });
+  const lines = [head];
   for (const x of r.results) lines.push(`  ${x.ok ? "\u2713" : "\u2717"} ${x.name}`);
+  if (failed?.code === 127) lines.push(t("reports.verify.commandNotFound", { gate: failed.name }));
   const ran = new Set(r.results.map((x) => x.name));
   const notReached = r.plan.gates.map((g) => g.name).filter((n) => !ran.has(n));
   if (notReached.length) lines.push(t("reports.verify.notReached", { gates: notReached.join(", ") }));
   if (r.skipped.length) lines.push(t("reports.verify.skipped", { gates: r.skipped.join(", ") }));
+  if (r.incomplete) lines.push(t(r.incomplete === "no-test-script" ? "reports.verify.noTestScript" : "reports.verify.noTestFiles"));
   return lines.join("\n");
 }
 
@@ -5690,7 +5959,7 @@ function nodeLoopIo(dir, agentCmd, reviewerCmd, agents = { builder: "claude", cr
       }
     },
     runAgent(prompt, absPath) {
-      return new Promise((resolve6) => {
+      return new Promise((resolve7) => {
         const task = `${prompt}
 
 Follow AGENTS.md. When done, self-verify with: npm run genesis -- verify`;
@@ -5702,8 +5971,8 @@ Follow AGENTS.md. When done, self-verify with: npm run genesis -- verify`;
           stdio: "inherit",
           env: { ...process.env, GENESIS_TASK: task }
         });
-        child.on("exit", (code) => resolve6(code));
-        child.on("error", () => resolve6(null));
+        child.on("exit", (code) => resolve7(code));
+        child.on("error", () => resolve7(null));
       });
     },
     verify(absPath) {
@@ -5715,7 +5984,7 @@ Follow AGENTS.md. When done, self-verify with: npm run genesis -- verify`;
 
 // src/initiatives/judge.ts
 import { createHash as createHash8 } from "node:crypto";
-import { existsSync as existsSync18, readFileSync as readFileSync17, readdirSync as readdirSync8 } from "node:fs";
+import { existsSync as existsSync18, readFileSync as readFileSync17, readdirSync as readdirSync9 } from "node:fs";
 import { join as join19 } from "node:path";
 var SEVERITY_SYNONYMS2 = {
   critical: "critical",
@@ -5736,7 +6005,7 @@ var pad = (n) => String(n).padStart(2, "0");
 function canonicalFiles(dir) {
   const top = ["loop-contract.md", "proposal.md", "tasks.md", "state.yaml"].filter((f) => existsSync18(join19(dir, f)));
   const specsDir = join19(dir, "specs");
-  const specs = existsSync18(specsDir) ? readdirSync8(specsDir).filter((n) => n.endsWith(".md")).sort().map((n) => `specs/${n}`) : [];
+  const specs = existsSync18(specsDir) ? readdirSync9(specsDir).filter((n) => n.endsWith(".md")).sort().map((n) => `specs/${n}`) : [];
   return [...top, ...specs];
 }
 function snapshot(dir) {
@@ -5855,6 +6124,49 @@ ${readFileSync17(join19(dir, rel), "utf8")}`).join("\n\n");
       return runAgent(bin, reviewArgs(prompt), { cwd: dir });
     }
   };
+}
+
+// src/initiatives/checkSession.ts
+var canStartCheckSession = (stdin) => Boolean(stdin.isTTY) && typeof stdin.setRawMode === "function";
+async function runCheckSession(key, start, decisions, io) {
+  let state = start;
+  for (; ; ) {
+    const missing = missingCheckpoints(key, state, decisions);
+    if (missing.length === 0) {
+      io.write(t("helper.check.sessionPassed"));
+      return { state, outcome: "passed" };
+    }
+    const open = missing.filter((n) => waitSeconds(state, key.checkpoints.find((c) => c.n === n), io.now()) === 0);
+    if (open.length === 0) {
+      const wait = Math.min(...missing.map((n) => waitSeconds(state, key.checkpoints.find((c) => c.n === n), io.now())));
+      io.write(t("helper.check.sessionLocked", { seconds: wait }));
+      return { state, outcome: "locked" };
+    }
+    const cp = key.checkpoints.find((c) => c.n === open[0]);
+    const q = currentQuestion(cp, state);
+    io.write(t("helper.check.show", { n: cp.n, total: key.checkpoints.length, pending: missing.length, id: cp.decisionId }));
+    io.write(q.q);
+    q.options.forEach((o, k) => io.write(`  ${"ABC"[k]}) ${o}`));
+    io.write(t("helper.check.sessionHint"));
+    for (; ; ) {
+      const k = await io.readKey();
+      if (k === null || k.trim().toLowerCase() === "q") {
+        io.write(t("helper.check.sessionQuit"));
+        return { state, outcome: "quit" };
+      }
+      if (parseAnswer(k) === null) continue;
+      const r = answerCheckpoint(key, state, cp.n, k, io.now());
+      if (r.result === "invalid" || r.result === "locked") continue;
+      state = r.state;
+      io.save(state);
+      if (r.result === "passed") {
+        io.write(t("helper.check.sessionOne", { n: cp.n }));
+      } else {
+        io.write(t("helper.check.failed", { n: cp.n, seconds: waitSeconds(state, cp, io.now()) }));
+      }
+      break;
+    }
+  }
 }
 
 // src/initiatives/cardDrafts.ts
@@ -6144,7 +6456,7 @@ async function humanSign(kind, id, review, gate = "") {
     process.exit(1);
   }
   out(t(`helper.sign.about.${kind}`, vars));
-  out(t("helper.sign.review", { review }));
+  if (kind !== "request") out(t("helper.sign.review", { review }));
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   const name = (await rl.question(t("helper.sign.prompt"))).trim();
   rl.close();
@@ -6153,6 +6465,40 @@ async function humanSign(kind, id, review, gate = "") {
     process.exit(0);
   }
   return name;
+}
+function rawKeyIo() {
+  const stdin = process.stdin;
+  stdin.setRawMode(true);
+  stdin.setEncoding("utf8");
+  stdin.resume();
+  const restore = () => {
+    try {
+      stdin.setRawMode(false);
+    } catch {
+    }
+  };
+  process.once("exit", restore);
+  const queue = [];
+  let ended = false;
+  let wake;
+  stdin.on("data", (chunk) => {
+    queue.push(...chunk);
+    wake?.();
+  });
+  stdin.on("end", () => {
+    ended = true;
+    wake?.();
+  });
+  return {
+    readKey: async () => {
+      while (queue.length === 0 && !ended) await new Promise((resolve7) => wake = resolve7);
+      const k = queue.shift();
+      return k === void 0 || k === "" || k === "" ? null : k;
+    },
+    write: out,
+    save: (state) => saveState(cwd, state),
+    now: () => Date.now()
+  };
 }
 async function main() {
   const [command, sub, id, gate] = argv;
@@ -6173,14 +6519,29 @@ async function main() {
       }
       if (can.warning) out(t("helper.designGate.warning", { warning: can.warning }));
     }
+    const anywayIdx = argv.indexOf("--anyway");
+    if (!process.stdin.isTTY) {
+      out(t("helper.sign.refuse", { action: t("helper.sign.action.approve", { gate: gateName(gate), id }) }));
+      process.exit(1);
+    }
+    const anyway = anywayIdx >= 0 ? (argv[anywayIdx + 1] ?? "").trim() : void 0;
+    if (anyway !== void 0 && anyway.replace(/\s+/g, " ").length < 10) {
+      out(t("helper.gateApprove.anywayShort"));
+      process.exit(1);
+    }
+    const blockers = planGateBlockers(openspecDir, id, gate);
+    if (blockers.length > 0 && anyway === void 0) {
+      out(t("helper.gateApprove.notReady", { gate: gateName(gate), id, arg: gate, reasons: blockers.join("\n") }));
+      process.exit(1);
+    }
     const by = await humanSign("approve", id, GATE_REVIEW[gate](id), gate);
     try {
       const prepared = await prepareSignature(openspecDir, cwd, { kind: gate, id, by, at: today });
-      approveGate(openspecDir, id, gate, { by, at: today });
+      approveGate(openspecDir, id, gate, { by, at: today }, "approved", anyway);
       prepared?.commit();
       out(t("helper.gateApprove.recorded", { gate: gateName(gate), by, date: today }));
     } catch (e) {
-      out(e instanceof Error ? e.message : String(e));
+      out(errText(e));
       process.exit(1);
     }
     return;
@@ -6209,7 +6570,32 @@ async function main() {
       prepared?.commit();
       out(t("helper.gateWaive.recorded", { by, date: today, reason }));
     } catch (e) {
-      out(e instanceof Error ? e.message : String(e));
+      out(errText(e));
+      process.exit(1);
+    }
+    return;
+  }
+  if (command === "gate" && sub === "request-changes") {
+    const noteIdx = argv.indexOf("--note");
+    const note = (noteIdx >= 0 ? argv[noteIdx + 1] ?? "" : "").trim();
+    if (!id || !GATES2.includes(gate)) {
+      out(t("helper.gateRequest.usage", { gates: GATES2.join("|") }));
+      process.exit(1);
+    }
+    if (note.length < 5) {
+      out(t("helper.gateRequest.noteNeeded"));
+      process.exit(1);
+    }
+    if (gate === "design" && resolveDesignState(readGlobalConfig(homedir5()), readProjectConfig(cwd)).mode === "off") {
+      out(t("helper.designOffNotEnforced", { id }));
+      process.exit(1);
+    }
+    const by = await humanSign("request", id, GATE_REVIEW[gate](id), gate);
+    try {
+      approveGate(openspecDir, id, gate, { by, at: today }, "changes-requested", note);
+      out(t("helper.gateRequest.recorded", { gate: gateName(gate), by, date: today }));
+    } catch (e) {
+      out(errText(e));
       process.exit(1);
     }
     return;
@@ -6226,7 +6612,7 @@ async function main() {
       prepared?.commit();
       out(t("helper.infraAccept.recorded", { by, date: today }));
     } catch (e) {
-      out(e instanceof Error ? e.message : String(e));
+      out(errText(e));
       process.exit(1);
     }
     return;
@@ -6442,7 +6828,7 @@ ${renderDesignAudit(findings)}`);
         out(kinds.length ? t("helper.signing.adopted", { id: target, kinds: kinds.join(", ") }) : t("helper.signing.adoptNothing", { id: target }));
         process.exit(0);
       } catch (e) {
-        out(t("helper.signing.failed", { reason: e instanceof Error ? e.message : String(e) }));
+        out(t("helper.signing.failed", { reason: errText(e) }));
         process.exit(1);
       }
     }
@@ -6468,10 +6854,14 @@ ${renderDesignAudit(findings)}`);
     const decisions = collectDecisions(openspecDir);
     const key = loadKey(cwd);
     if (!key || key.checkpoints.length === 0) {
-      out(t("helper.check.noKey"));
+      out(t(hasCheckpointMaterial(decisions) ? "helper.check.noKey" : "helper.check.noDecisions"));
       process.exit(1);
     }
     const state = loadState(cwd);
+    if (argv[1] === void 0 && canStartCheckSession(process.stdin)) {
+      const r2 = await runCheckSession(key, state, decisions, rawKeyIo());
+      process.exit(r2.outcome === "passed" ? 0 : 1);
+    }
     const missing = missingCheckpoints(key, state, decisions);
     const [n, answer] = argv.slice(1);
     const now = Date.now();
@@ -6523,7 +6913,7 @@ ${renderDesignAudit(findings)}`);
     requireTerminal("sign");
     const key = loadKey(cwd);
     if (!key) {
-      out(t("helper.sign.noKey"));
+      out(t(hasCheckpointMaterial(collectDecisions(openspecDir)) ? "helper.sign.noKey" : "helper.sign.noDecisions"));
       process.exit(1);
     }
     const r = await trySignSigned(cwd, collectDecisions(openspecDir), key, loadState(cwd), /* @__PURE__ */ new Date(), userInfo().username);
@@ -6553,7 +6943,7 @@ ${renderDesignAudit(findings)}`);
     out(modelCalls(r));
     for (const f of r.failed) out(t("helper.calls.failedItem", { id: f.id, reason: f.reason }));
     const existing = {};
-    for (const name of existsSync20(dir) ? readdirSync9(dir) : []) {
+    for (const name of existsSync20(dir) ? readdirSync10(dir) : []) {
       if (name.endsWith(".md")) existing[name] = readFileSync18(join21(dir, name), "utf8");
     }
     const plan = planDrafts(basename(cwd), decisions, r.cache, existing);
@@ -6585,7 +6975,7 @@ ${renderDesignAudit(findings)}`);
       const walk = (dir) => {
         const found = [];
         try {
-          for (const e of readdirSync9(dir, { withFileTypes: true })) {
+          for (const e of readdirSync10(dir, { withFileTypes: true })) {
             const p = join21(dir, e.name);
             if (e.isDirectory()) found.push(...walk(p));
             else if (e.name === "proposal.md" || e.name === "design.md") found.push(p);
@@ -6609,7 +6999,7 @@ ${renderDesignAudit(findings)}`);
       try {
         reply = runClaudeJson(backfillPrompt(files), BACKFILL_SCHEMA, process.env.GENESIS_CLAUDE_BIN, "sonnet");
       } catch (e) {
-        out(t("helper.backfill.failed", { why: errText(e) }));
+        out(t("helper.backfill.failed", { why: agentFailureText(e) }));
         process.exit(1);
       }
       let candidates;
@@ -6705,10 +7095,11 @@ ${renderDesignAudit(findings)}`);
           try {
             parsed = ask();
           } catch (first) {
+            if (first instanceof AgentError) throw first;
             parsed = ask(`Your previous reply was rejected: ${first instanceof Error ? first.message : String(first)}. Fix exactly that and answer again.`);
           }
         } catch (e) {
-          out(t("helper.backfill.failed", { why: errText(e) }));
+          out(t("helper.backfill.failed", { why: agentFailureText(e) }));
           process.exit(1);
         }
         const v = verifyManual(parsed, cwd, used);
@@ -6815,7 +7206,7 @@ ${renderDesignAudit(findings)}`);
         prepared?.commit();
         out(infraSetMessage(id, gate));
       } catch (e) {
-        out(e instanceof Error ? e.message : String(e));
+        out(errText(e));
         process.exit(1);
       }
       return;

@@ -217,7 +217,7 @@ covered by an old signature, and that is correct.
 
 Then tell the person, in plain language:
 
-> The screens are ready. Open the cockpit with `genesis ide .`, go to the initiative's
+> The screens are ready. Open this project in the Genesis IDE app, go to the initiative's
 > **Design** panel, click through the pages, and **Approve** the design gate when they look
 > right (or **Request changes** and tell me what to fix). No UI code gets written until you
 > do.
