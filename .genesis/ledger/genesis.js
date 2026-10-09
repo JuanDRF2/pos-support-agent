@@ -3233,6 +3233,20 @@ import { mkdtempSync as mkdtempSync2, rmSync as rmSync2 } from "node:fs";
 import { tmpdir as tmpdir2 } from "node:os";
 import { join as join8 } from "node:path";
 
+// assets/guard/hardening.js
+var KNOWN_TOOL_SETUP = new RegExp(
+  // Bare name, or the standard Homebrew folders only: a script called `brew` in another folder is not Homebrew.
+  '^"?\\$\\(\\s*(?:(?:/opt/homebrew/bin|/usr/local/bin|/home/linuxbrew/\\.linuxbrew/bin)/)?(?:' + [
+    "brew shellenv",
+    "pyenv init(?: --path| -)?",
+    "rbenv init -",
+    "nodenv init -",
+    "ssh-agent -s",
+    "direnv hook (?:bash|zsh)",
+    "fnm env(?: --[a-z-]+)*"
+  ].join("|") + ')\\s*\\)"?$'
+);
+
 // assets/guard/policy.js
 var INFRA_GATE_MESSAGE = [
   "This provisions or changes infrastructure \u2014 infrastructure is always a gate.",

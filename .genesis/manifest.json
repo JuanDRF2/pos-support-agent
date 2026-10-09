@@ -7,7 +7,7 @@
     },
     ".genesis/guard/hardening.js": {
       "version": "0.37.0",
-      "sha256": "d71dc793499428e0c4ccfa5e7fedb7ad0c58305f0eaa44718d4ed974d0236f6f"
+      "sha256": "73043f193b0284aca3e6aa7207e9c950a54a14bd6dbb991ec7bb067ef5389b96"
     },
     ".genesis/guard/policy.js": {
       "version": "0.37.0",
@@ -19,7 +19,7 @@
     },
     ".genesis/ledger/genesis.js": {
       "version": "0.37.0",
-      "sha256": "530aa70cdf9c053cd733f296867296c32697992d88b48802fb23a0f20e15b944"
+      "sha256": "5ba7c5af688ff5b50dc865b6d80526636a7576ada2aed7026c10120d7a6594d2"
     },
     ".genesis/well-architected/architecture.md": {
       "version": "0.37.0",

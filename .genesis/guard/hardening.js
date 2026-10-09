@@ -320,6 +320,26 @@ export function inlineSourceTouchesSecret(cmd) {
 // --- commands that hide what they run, or delete in bulk ---------------------------------------------
 
 /**
+ * The setup lines that tools tell you to put in a shell profile, and that agents run all the time:
+ * `eval "$(brew shellenv)"`. Only these exact forms are skipped (the whole argument is one substitution of a known
+ * tool with fixed arguments); `;`, `|`, `>`, another substitution or any other tool still asks.
+ */
+const KNOWN_TOOL_SETUP = new RegExp(
+  // Bare name, or the standard Homebrew folders only: a script called `brew` in another folder is not Homebrew.
+  '^"?\\$\\(\\s*(?:(?:/opt/homebrew/bin|/usr/local/bin|/home/linuxbrew/\\.linuxbrew/bin)/)?(?:' +
+    [
+      'brew shellenv',
+      'pyenv init(?: --path| -)?',
+      'rbenv init -',
+      'nodenv init -',
+      'ssh-agent -s',
+      'direnv hook (?:bash|zsh)',
+      'fnm env(?: --[a-z-]+)*',
+    ].join('|') +
+    ')\\s*\\)"?$',
+)
+
+/**
  * Reason to ask when the real command is hidden behind a variable or substitution
  * (`$CMD x`, `"$(which rm)" -rf`, `eval "$X"`, `bash -c "$X"`), or when `find` deletes in bulk.
  * @param {string} cmd
@@ -333,7 +353,10 @@ export function hiddenOrBulkReason(cmd) {
       return 'the command name is a variable or a substitution, so the guard cannot see what runs'
     }
     const prog = baseName(program)
-    if (prog === 'eval') return 'eval runs text the guard cannot read'
+    if (prog === 'eval') {
+      if (KNOWN_TOOL_SETUP.test(args.join(' '))) continue
+      return 'eval runs text the guard cannot read'
+    }
     if (['bash', 'sh', 'zsh'].includes(prog)) {
       const c = args.indexOf('-c')
       if (c >= 0 && /^\$/.test(args[c + 1] ?? '')) return 'a shell -c whose script is a variable'
