@@ -64,7 +64,7 @@ Settings are read from environment variables (names and safe defaults are in `.e
 |---|---|---|
 | `npm run dev` | Starts the chat page and API on `127.0.0.1`. | Yes, to answer |
 | `npm run ingest` | Builds the search index from `docs/kb/`. | No |
-| `npm run test:unit` | 103 unit tests (chunker, scorers, server rules, config...). | No |
+| `npm run test:unit` | 104 unit tests (chunker, scorers, server rules, config...). | No |
 | `npm run eval:fast` | Retrieval eval, plus the refusals the threshold alone decides. | No |
 | `npm test` | Unit tests, then the **full eval** with the scorecard below. | Yes |
 | `npm run verify` | typecheck + lint + unit tests + `eval:fast` + build. This is what `genesis verify` runs. | No |
