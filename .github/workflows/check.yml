@@ -21,3 +21,5 @@ jobs:
         run: npm run lint
       - name: Unit tests (chunker, scorers, server rules, config, ...)
         run: npm run test:unit
+      - name: Build
+        run: npm run build

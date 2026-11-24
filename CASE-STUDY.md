@@ -2,8 +2,7 @@
 
 ## The problem I was actually solving
 
-Four years into product management, I kept running into the same requirement in the AI product
-roles I was targeting: a shipped AI artifact with retrieval and evals. Job descriptions asked for a "shipped agentic
+Over four years in product (Junior PM from May 2022, PM since December 2023), I kept running into the same requirement in the AI roles I was targeting: a shipped AI artifact with retrieval and evals. Job descriptions asked for a "shipped agentic
 AI product in production," for "AI/ML-native product work: RAG, semantic search," and for "deep
 LLM/agent-memory systems fluency." That's not a seniority gap or a communication gap. It's a
 specific, nameable thing I hadn't built yet. This project covers the retrieval and evaluation part of that
@@ -75,7 +74,9 @@ A real `npm test` run, not a cherry-picked one:
 | Faithfulness (cites the source, invents nothing) | 14/15 (93%) | 3/4 | 85% |
 | Correct refusal | 23/23 (100%) | 6/6 | 95% |
 
-Zero `npm audit` vulnerabilities. No paid or keyed API anywhere in the code: when it was built, a search of the repo for
+Pass marks apply to the All-questions column; held-out is reported separately and does not gate.
+
+Zero `npm audit` findings at the time of the last check (not re-run in CI). No paid or keyed API anywhere in the code: when it was built, a search of the repo for
 hosted-service calls and API keys found none (that check is not stored as a script). 103 unit tests. To reproduce: install, ingest and test with the
 commands in the README (the tests need Ollama running locally).
 
@@ -109,12 +110,11 @@ what changes, not a hand-wave:
 
 None of this is a criticism of the demo. It's the difference between proving the mechanism works
 and being ready to bet a real support queue on it, and I'd rather be able to name that gap clearly
-than pretend a weekend project is production-ready.
+than pretend a demo is production-ready.
 
 ## What this says about how I work
 
 I don't ship an AI feature because it demoed well once. I measure the parts that are supposed to
 be safe, I keep the parts that turn out to matter even when I didn't expect them to, and I write
 down the parts that don't hold up instead of quietly cutting them from the story. That's the same
-instinct behind Signal to Ship, applied to a harder, more technical problem, and it's the thing I'd
-want a team to know about how I build before they hire me to do more of it.
+instinct behind Signal to Ship, applied to a harder, more technical problem.

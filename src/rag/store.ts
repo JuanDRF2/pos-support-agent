@@ -1,6 +1,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { KB_FILES, MODEL_DIMENSIONS, MODEL_ID, MODEL_REVISION } from '../config.js'
+import { resolveFromModule } from '../paths.js'
 import type { Chunk } from '../types.js'
 
 export type IndexedChunk = Chunk & { embedding: number[] }
@@ -19,7 +20,7 @@ export class IndexError extends Error {}
 const REINGEST = 'Run `npm run ingest` to rebuild it.'
 
 export function defaultIndexPath(): string {
-  return new URL('../../data/index.json', import.meta.url).pathname
+  return resolveFromModule('../../data/index.json', import.meta.url)
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
