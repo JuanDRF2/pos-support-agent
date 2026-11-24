@@ -73,13 +73,19 @@ function readStdin() {
 const CANNOT_SAY =
   'Git could not say what this push would send (not a repository, an unknown branch, a history too large to read, or a git error), so it is blocked rather than waved through. Check the repository, or push by hand.'
 
+/** Longest one git call may run. A hung git must not hang the hook: past this it counts as "could not say" and the push is blocked. */
+const GIT_TIMEOUT_MS = (() => {
+  const n = Number(process.env.GENESIS_GUARD_GIT_TIMEOUT_MS)
+  return Number.isFinite(n) && n > 0 ? n : 60_000
+})()
+
 /**
- * Run git in `dir`, never throwing. `ok` is false on a non-zero exit, a spawn error or a buffer overflow.
+ * Run git in `dir`, never throwing. `ok` is false on a non-zero exit, a spawn error, a timeout or a buffer overflow.
  * @param {string[]} args @param {string} dir
  */
 function git(args, dir) {
   try {
-    const r = spawnSync('git', args, { encoding: 'utf8', maxBuffer: 1024 * 1024 * 1024, cwd: dir || undefined })
+    const r = spawnSync('git', args, { encoding: 'utf8', maxBuffer: 1024 * 1024 * 1024, timeout: GIT_TIMEOUT_MS, cwd: dir || undefined })
     return { ok: !r.error && r.status === 0, out: String(r.stdout || '') }
   } catch {
     return { ok: false, out: '' }

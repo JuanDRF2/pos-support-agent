@@ -2715,6 +2715,11 @@ function stateFile(openspecDir2, id) {
   if (!existsSync6(p)) throw new Error(t("helper.err.noInitiative", { id }));
   return p;
 }
+function writeStateFile(path, body) {
+  const tmp = `${path}.${process.pid}.tmp`;
+  writeFileSync5(tmp, body);
+  renameSync(tmp, path);
+}
 function recordApproval(yaml, entry, at) {
   const line = entry.replace(/[\u0000-\u001f\u007f\u0085\u2028\u2029]+/g, " ");
   return yaml.replace(/^(approvals:.*)$/m, `$1
@@ -2727,7 +2732,7 @@ function createChange(openspecDir2, title, updated) {
   if (existsSync6(dir)) return { id, dir, created: false };
   const input = { id, title };
   mkdirSync4(join7(dir, "specs"), { recursive: true });
-  writeFileSync5(join7(dir, "state.yaml"), renderStateYaml({ ...input, updated }));
+  writeStateFile(join7(dir, "state.yaml"), renderStateYaml({ ...input, updated }));
   writeFileSync5(join7(dir, "loop-contract.md"), renderLoopContract(input));
   writeFileSync5(join7(dir, "proposal.md"), renderProposal(input));
   writeFileSync5(join7(dir, "tasks.md"), renderTasks(input));
@@ -2782,7 +2787,7 @@ function approveGate(openspecDir2, id, gate, approval, state = "approved", note)
     `${gate} ${state} by ${approval.by} on ${approval.at}${reason ? ` \u2014 ${reason}` : ""}`,
     approval.at
   );
-  writeFileSync5(statePath2, next);
+  writeStateFile(statePath2, next);
   writeSeal(openspecDir2, id);
 }
 function mdSections(md) {
@@ -2848,7 +2853,7 @@ function addBreakpoint(openspecDir2, id, text2, at) {
   let last = head;
   for (let i = head + 1; i < lines.length && /^\s+-\s/.test(lines[i]); i++) last = i;
   lines.splice(last + 1, 0, `  - ${yamlString(`${at} \u2014 ${clean}`)}`);
-  writeFileSync5(statePath2, lines.join("\n").replace(/(^updated:\s*).*$/m, `$1${at}`));
+  writeStateFile(statePath2, lines.join("\n").replace(/(^updated:\s*).*$/m, `$1${at}`));
 }
 var INFRA_RANK = { none: 0, project: 1, shared: 2 };
 var isInfraLowering = (current, next) => (INFRA_RANK[next] ?? 0) < (INFRA_RANK[current || "none"] ?? 0);
@@ -2862,7 +2867,7 @@ function setInfra(openspecDir2, id, scope, approval) {
   const gateVal = scope === "project" ? "pending" : "n/a";
   let next = setBlockField(setBlockField(yaml, "infra", "scope", scope), "infra", "gate", gateVal);
   if (lowering && approval) next = recordApproval(next, `infra scope lowered ${current} -> ${scope} by ${approval.by} on ${approval.at}`, approval.at);
-  writeFileSync5(statePath2, next);
+  writeStateFile(statePath2, next);
   writeSeal(openspecDir2, id);
 }
 function acceptInfra(openspecDir2, id, approval) {
@@ -2880,7 +2885,7 @@ function acceptInfra(openspecDir2, id, approval) {
     `infra (project) accepted by ${approval.by} on ${approval.at}`,
     approval.at
   );
-  writeFileSync5(statePath2, next);
+  writeStateFile(statePath2, next);
   writeSeal(openspecDir2, id);
 }
 var DESIGN_SOURCE_BLOCK = `designSource:
@@ -2925,7 +2930,7 @@ function syncDesignGates(openspecDir2, gateOn) {
     if (next === current) continue;
     const sealed = checkSeal(openspecDir2, id);
     if (sealed === "mismatch" || sealed === "nokey") continue;
-    writeFileSync5(
+    writeStateFile(
       path,
       setBlockField(yaml, "gates", "design", next).replace(
         "# n/a (no UI) | pending | approved | changes-requested",
@@ -2948,7 +2953,7 @@ function setDesignNeed(openspecDir2, id, need) {
   const current = readField(yaml, "design") || "n/a";
   const nextGate = need === "ui" ? current === "n/a" ? "pending" : current : "n/a";
   yaml = setBlockField(setBlockField(yaml, "gates", "design", nextGate), "designSource", "need", need);
-  writeFileSync5(statePath2, yaml);
+  writeStateFile(statePath2, yaml);
   writeSeal(openspecDir2, id);
 }
 function recordDesign(openspecDir2, id, source, at) {
@@ -2960,7 +2965,7 @@ function recordDesign(openspecDir2, id, source, at) {
   const gate = current === "approved" || current === "n/a" || current === "waived" ? "pending" : current;
   for (const [k, v] of Object.entries(source)) yaml = setDesignField(yaml, k, v);
   yaml = setBlockField(setBlockField(yaml, "designSource", "need", "ui"), "gates", "design", gate).replace(/(^updated:\s*).*$/m, `$1${at}`);
-  writeFileSync5(statePath2, yaml);
+  writeStateFile(statePath2, yaml);
   writeSeal(openspecDir2, id);
   return { resetApproval };
 }
@@ -3024,7 +3029,7 @@ function archiveChange(openspecDir2, id, date) {
   const statePath2 = join7(dest, "state.yaml");
   if (existsSync6(statePath2)) {
     const yaml = readFileSync6(statePath2, "utf8");
-    writeFileSync5(
+    writeStateFile(
       statePath2,
       yaml.replace(/(^phase:\s*)\S+/m, "$1archived").replace(/(^updated:\s*).*$/m, `$1${date}`)
     );
