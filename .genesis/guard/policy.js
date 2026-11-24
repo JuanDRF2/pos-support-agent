@@ -35,7 +35,7 @@ import {
  * @typedef {{ tool_name?: string, cwd?: string, permission_mode?: string, tool_input?: { command?: string | string[] } }} PreToolUsePayload
  * @typedef {{action:'allow', reason:string}
  *   | {action:'ask', reason:string, context:string}
- *   | {action:'block', reason:string}} Decision
+ *   | {action:'block', reason:string, context?:string}} Decision
  */
 
 /** Surfaced when a command provisions/changes infrastructure — infra is a gate. */
