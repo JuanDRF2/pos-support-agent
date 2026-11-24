@@ -77,7 +77,7 @@ A real `npm test` run, not a cherry-picked one:
 Pass marks apply to the All-questions column; held-out is reported separately and does not gate.
 
 Zero `npm audit` findings at the time of the last check (not re-run in CI). No paid or keyed API anywhere in the code: when it was built, a search of the repo for
-hosted-service calls and API keys found none (that check is not stored as a script). 103 unit tests. To reproduce: install, ingest and test with the
+hosted-service calls and API keys found none (that check is not stored as a script). 104 unit tests. To reproduce: install, ingest and test with the
 commands in the README (the tests need Ollama running locally).
 
 ## What it would take to run this on a real POS
