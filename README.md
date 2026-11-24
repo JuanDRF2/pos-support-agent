@@ -4,6 +4,8 @@ A small support chat for merchants of a point-of-sale system. You ask a question
 
 The point of this project is not the chat window. It is to show **real retrieval (RAG) and real, repeatable evals**, running entirely on one laptop with no API keys, no accounts and no cost.
 
+**Result (one full local run, 23 questions):** retrieval 15/15, correct refusal 23/23, faithfulness 14/15, with the one miss and its limits documented below. Decisions and trade-offs: [CASE-STUDY.md](CASE-STUDY.md).
+
 > **This is a demo.** The three help articles are synthetic and were written for this project. It is not connected to any real POS, has no login, stores no history and is meant to run on `localhost` only.
 
 ## What it does
@@ -117,6 +119,8 @@ Time per question: average 10.5 s, slowest 28.1 s
 
 Result: OK
 ```
+
+Pass marks apply to the All-questions column; held-out is reported separately and does not gate.
 
 - **The one miss:** for "Can I refund an order from six weeks ago in the POS?" the model correctly explains the 30-day rule but leaves out that older orders go through general support.
 - **Speed:** across four full runs the average was between 6.7 s and 10.5 s per question, and the slowest between 15.2 s and 28.1 s (the runs are logged in `planning/decisions.md`, Task 12). A full answer takes several seconds; the page shows "thinking..." meanwhile. Asking again after the model has been idle for a few minutes is slower, because Ollama has to load it again.
