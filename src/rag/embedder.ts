@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { AutoModel, AutoTokenizer, env } from '@huggingface/transformers'
+import { resolveFromModule } from '../paths.js'
 import { MODEL_DIMENSIONS, MODEL_FILES, MODEL_ID, MODEL_REVISION } from '../config.js'
 
 export class ModelError extends Error {}
@@ -9,7 +10,7 @@ export class ModelError extends Error {}
 const SETUP_HINT = 'Run `npm run ingest` once (it needs internet) to download and verify the embedding model.'
 const MAX_DOWNLOAD_BYTES = 50 * 1024 * 1024
 
-const MODELS_ROOT = new URL('../../.cache/models/', import.meta.url).pathname
+const MODELS_ROOT = resolveFromModule('../../.cache/models/', import.meta.url)
 const MODEL_NAME = `minilm-${MODEL_REVISION.slice(0, 12)}`
 
 export function defaultModelDir(): string {
